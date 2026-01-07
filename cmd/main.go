@@ -4,55 +4,87 @@ package main
 import (
 	"context"
 	"errors"
-	"flag"
 	"fmt"
 	"os"
 	"strings"
 
+	"github.com/rs/zerolog/log"
 	"github.com/traefik/assimilis/pkg/generator"
+	"github.com/urfave/cli/v3"
 )
 
 func main() {
 	cfg := generator.DefaultConfig()
-
-	version := flag.Bool("version", false, "Display version information.")
-
-	flag.StringVar(&cfg.RepoName, "repo-name", cfg.RepoName, "Name of the repository.")
-
-	flag.StringVar(&cfg.HTMLTemplatePath, "html-template", "", "Override HTML template path (default: embedded).")
-	flag.StringVar(&cfg.NoticeTplPath, "notice-template", "", "Override NOTICE template path (default: embedded).")
-
-	flag.StringVar(&cfg.SPDXVersion, "spdx-version", cfg.SPDXVersion, "SPDX license-list-data version/tag")
-
-	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "assimilis\nUsage:\n %s [flags]\n\nFlags:\n", os.Args[0])
-		flag.PrintDefaults()
+	app := &cli.Command{
+		Name:  "assimilis",
+		Usage: "Generate OSS attribution files",
+		Commands: []*cli.Command{
+			{
+				Name:   "version",
+				Usage:  "Display version information",
+				Action: displayVersion,
+			},
+		},
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:        "repo-name",
+				Usage:       "Name of the repository",
+				Destination: &cfg.RepoName,
+			},
+			&cli.StringFlag{
+				Name:        "html-template",
+				Usage:       "Override HTML template path (default: embedded)",
+				Destination: &cfg.HTMLTemplatePath,
+			},
+			&cli.StringFlag{
+				Name:        "notice-template",
+				Usage:       "Override NOTICE template path (default: embedded)",
+				Destination: &cfg.NoticeTplPath,
+			},
+			&cli.StringFlag{
+				Name:        "spdx-version",
+				Usage:       "SPDX license-list-data version/tag",
+				Value:       cfg.SPDXVersion,
+				Destination: &cfg.SPDXVersion,
+			},
+		},
+		Action: func(ctx context.Context, _ *cli.Command) error {
+			err := validate(cfg)
+			if err != nil {
+				return err
+			}
+			return run(cfg, ctx)
+		},
 	}
 
-	flag.Parse()
-
-	if version != nil && *version {
-		displayVersion()
-		return
+	if err := app.Run(context.Background(), os.Args); err != nil {
+		log.Fatal().Err(err).Msg("Application error")
 	}
+}
 
+func validate(cfg generator.Config) error {
 	if strings.TrimSpace(cfg.RepoName) == "" {
-		flag.Usage()
-		fmt.Fprintln(os.Stderr, "\nERROR: -repo-name cannot be empty")
-		return
+		return errors.New("-repo-name cannot be empty")
+	}
+	return nil
+}
+
+func run(cfg generator.Config, ctx context.Context) error {
+	err := validate(cfg)
+	if err != nil {
+		return err
 	}
 
-	if err := generator.Run(context.Background(), cfg); err != nil {
+	if err := generator.Run(ctx, cfg); err != nil {
 		var unknownErr generator.UnknownLicensesError
 		if errors.As(err, &unknownErr) {
 			fmt.Fprintln(os.Stderr, "ERROR: Unknown license expressions found:")
 			for _, id := range unknownErr.IDs {
 				fmt.Fprintln(os.Stderr, "-", id)
 			}
-			fmt.Fprintln(os.Stderr, "Map them to valid SPDX IDs or add custom license texts.")
-			os.Exit(2)
+			return fmt.Errorf("Map them to valid SPDX IDs or add custom license texts.")
 		}
-		fmt.Fprintf(os.Stderr, "ERROR: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("ERROR: %v\n", err)
 	}
+	return nil
 }

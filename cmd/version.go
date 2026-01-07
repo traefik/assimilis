@@ -1,8 +1,11 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"runtime"
+
+	"github.com/urfave/cli/v3"
 )
 
 var (
@@ -12,7 +15,7 @@ var (
 )
 
 // displayVersion DisplayVersion version.
-func displayVersion() {
+func displayVersion(_ context.Context, _ *cli.Command) error {
 	fmt.Printf(`Myrmica Assimilis:
  version     : %s
  commit      : %s
@@ -21,4 +24,5 @@ func displayVersion() {
  go compiler : %s
  platform    : %s/%s
 `, version, commit, date, runtime.Version(), runtime.Compiler, runtime.GOOS, runtime.GOARCH)
+	return nil
 }
