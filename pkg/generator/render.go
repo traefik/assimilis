@@ -8,17 +8,14 @@ import (
 	texttpl "text/template"
 )
 
-//go:embed templates/*.gotpl
-var embeddedTemplates embed.FS
-
-func renderHTML(cfg Config, model any) (string, error) {
+func renderHTML(cfg Config, embedded embed.FS, model any) (string, error) {
 	var tpl *template.Template
 	var err error
 
 	if cfg.HTMLTemplatePath != "" {
 		tpl, err = template.ParseFiles(cfg.HTMLTemplatePath)
 	} else {
-		tpl, err = template.ParseFS(embeddedTemplates, "templates/third_party_licenses.gotpl")
+		tpl, err = template.ParseFS(embedded, "templates/third_party_licenses.gotpl")
 	}
 
 	if err != nil {
@@ -34,14 +31,14 @@ func renderHTML(cfg Config, model any) (string, error) {
 	return buf.String(), nil
 }
 
-func renderText(cfg Config, model any) (string, error) {
+func renderText(cfg Config, embedded embed.FS, model any) (string, error) {
 	var tpl *texttpl.Template
 	var err error
 
 	if cfg.NoticeTplPath != "" {
 		tpl, err = texttpl.ParseFiles(cfg.NoticeTplPath)
 	} else {
-		tpl, err = texttpl.ParseFS(embeddedTemplates, "templates/notice.gotpl")
+		tpl, err = texttpl.ParseFS(embedded, "templates/notice.gotpl")
 	}
 
 	if err != nil {

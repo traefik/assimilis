@@ -65,7 +65,7 @@ func getLicenseText(ctx context.Context, cfg Config, licenseID string) (string, 
 	}
 
 	if strings.HasPrefix(licenseID, "LicenseRef-") {
-		customPath := filepath.Join(cfg.CustomLicenseDir, licenseID+".txt")
+		customPath := filepath.Join(cfg.OutLicensesDir, "/custom/", licenseID+".txt")
 		// #nosec G304 -- customPath is constructed from controlled inputs
 		b, err := os.ReadFile(customPath)
 		if err != nil {

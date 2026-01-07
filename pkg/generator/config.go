@@ -12,9 +12,8 @@ type Config struct {
 	HTMLTemplatePath string
 	NoticeTplPath    string
 
-	OutDir           string
-	OutLicensesDir   string
-	CustomLicenseDir string
+	OutDir         string
+	OutLicensesDir string
 
 	SPDXVersion string
 
@@ -25,15 +24,14 @@ type Config struct {
 func DefaultConfig() Config {
 	outDir := "third_party"
 	outLicensesDir := outDir + "/licenses"
-	customLicenseDir := outLicensesDir + "/custom"
+	sbomPath := outDir + "/sbom"
 
 	return Config{
-		SBOMPath:       "compliance/sbom",
-		LicenseMapPath: "compliance/config/license-map.json",
+		SBOMPath:       sbomPath,
+		LicenseMapPath: "data/license-map.json",
 
-		OutDir:           outDir,
-		OutLicensesDir:   outLicensesDir,
-		CustomLicenseDir: customLicenseDir,
+		OutDir:         outDir,
+		OutLicensesDir: outLicensesDir,
 
 		SPDXVersion: "v3.27.0",
 

@@ -2,6 +2,8 @@ package generator
 
 import (
 	"context"
+	"embed"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,6 +11,9 @@ import (
 	"strings"
 	"time"
 )
+
+//go:embed templates/*.gotpl data/license-map.json
+var embedded embed.FS
 
 // UnknownLicensesError indicates that some license expressions could not be resolved.
 type UnknownLicensesError struct {
@@ -40,12 +45,12 @@ func Run(ctx context.Context, cfg Config) error {
 		return fmt.Errorf("failed to build model: %w", err)
 	}
 
-	htmlOut, err := renderHTML(cfg, model)
+	htmlOut, err := renderHTML(cfg, embedded, model)
 	if err != nil {
 		return fmt.Errorf("failed to render HTML output: %w", err)
 	}
 
-	noticeOut, err := renderText(cfg, model)
+	noticeOut, err := renderText(cfg, embedded, model)
 	if err != nil {
 		return fmt.Errorf("failed to render notice output: %w", err)
 	}
@@ -74,7 +79,7 @@ func loadInputs(ctx context.Context, cfg Config) (SBOM, map[string]string, map[s
 		return SBOM{}, nil, nil, fmt.Errorf("failed to read SBOM: %w", err)
 	}
 
-	licenseMap, err := readJSON[map[string]string](cfg.LicenseMapPath)
+	licenseMap, err := loadLicenseMap(cfg.LicenseMapPath)
 	if err != nil {
 		return SBOM{}, nil, nil, fmt.Errorf("failed to read license map: %w", err)
 	}
@@ -85,6 +90,18 @@ func loadInputs(ctx context.Context, cfg Config) (SBOM, map[string]string, map[s
 	}
 
 	return sbom, licenseMap, spdxNames, nil
+}
+
+func loadLicenseMap(path string) (map[string]string, error) {
+	b, err := embedded.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read license map: %w", err)
+	}
+	var m map[string]string
+	if err := json.Unmarshal(b, &m); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal license map: %w", err)
+	}
+	return m, nil
 }
 
 func buildModel(ctx context.Context, cfg Config, sbom SBOM, licenseMap map[string]string, spdxNames map[string]string) (Model, error) {
