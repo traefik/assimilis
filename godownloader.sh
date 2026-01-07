@@ -62,17 +62,17 @@ execute() {
 }
 get_binaries() {
   case "$PLATFORM" in
-    darwin/amd64) BINARIES="seo" ;;
-    darwin/arm64) BINARIES="seo" ;;
-    darwin/armv7) BINARIES="seo" ;;
-    linux/386) BINARIES="seo" ;;
-    linux/amd64) BINARIES="seo" ;;
-    linux/arm64) BINARIES="seo" ;;
-    linux/armv7) BINARIES="seo" ;;
-    windows/386) BINARIES="seo" ;;
-    windows/amd64) BINARIES="seo" ;;
-    windows/arm64) BINARIES="seo" ;;
-    windows/armv7) BINARIES="seo" ;;
+    darwin/amd64) BINARIES="assimilis" ;;
+    darwin/arm64) BINARIES="assimilis" ;;
+    darwin/armv7) BINARIES="assimilis" ;;
+    linux/386) BINARIES="assimilis" ;;
+    linux/amd64) BINARIES="assimilis" ;;
+    linux/arm64) BINARIES="assimilis" ;;
+    linux/armv7) BINARIES="assimilis" ;;
+    windows/386) BINARIES="assimilis" ;;
+    windows/amd64) BINARIES="assimilis" ;;
+    windows/arm64) BINARIES="assimilis" ;;
+    windows/armv7) BINARIES="assimilis" ;;
     *)
       log_crit "platform $PLATFORM is not supported.  Make sure this script is up-to-date and file request at https://github.com/${PREFIX}/issues/new"
       exit 1
