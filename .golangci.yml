@@ -1,0 +1,81 @@
+version: "2"
+linters:
+  default: all
+  disable:
+    - contextcheck
+    - cyclop
+    - dupl
+    - err113
+    - exhaustive
+    - exhaustruct
+    - forbidigo
+    - gocognit
+    - ireturn
+    - lll
+    - mnd
+    - nestif
+    - nilnil
+    - nlreturn
+    - noctx
+    - noinlineerr
+    - paralleltest
+    - prealloc
+    - rowserrcheck
+    - sqlclosecheck
+    - testpackage
+    - tparallel
+    - varnamelen
+    - wrapcheck
+    - wsl
+    - wsl_v5
+  settings:
+    depguard:
+      rules:
+        main:
+          deny:
+            - pkg: github.com/pkg/errors
+              desc: Should be replaced by standard lib errors package
+    goconst:
+      min-len: 3
+      min-occurrences: 3
+    gocyclo:
+      min-complexity: 23
+    govet:
+      enable:
+        - shadow
+    misspell:
+      locale: US
+    perfsprint:
+      err-error: true
+      errorf: true
+      sprintf1: true
+      strconcat: false
+  exclusions:
+    generated: lax
+    rules:
+      - linters:
+          - funlen
+        path: (.+)_test.go
+      - path: cmd/version.go
+        text: (version|date|commit) is a global variable
+      - path: cmd/version.go
+        text: use of `fmt.Printf` forbidden by pattern
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
