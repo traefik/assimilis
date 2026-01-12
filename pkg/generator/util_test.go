@@ -20,9 +20,9 @@ func TestUniqSorted(t *testing.T) {
 func TestSanitizeID(t *testing.T) {
 	t.Parallel()
 
-	assert.Equal(t, "MIT", sanitizeID("MIT", 40))
-	assert.Equal(t, "Apache-2-0", sanitizeID("Apache 2.0", 40))
-	assert.Equal(t, "MIT-AND-Apache-2-0", sanitizeID("MIT AND Apache 2.0", 40))
+	assert.Equal(t, "MIT", sanitizeID("MIT"))
+	assert.Equal(t, "Apache-2-0", sanitizeID("Apache 2.0"))
+	assert.Equal(t, "MIT-AND-Apache-2-0", sanitizeID("MIT AND Apache 2.0"))
 }
 
 func TestWriteText_CreateDirAndWriteFile(t *testing.T) {

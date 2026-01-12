@@ -62,14 +62,12 @@ func loadSpdxNameMap(ctx context.Context, spdxVersion string) (map[string]string
 func getLicenseText(ctx context.Context, cfg Config, licenseID string) (string, error) {
 	cachePath := filepath.Join(cfg.OutLicensesDir, licenseID+".txt")
 
-	// #nosec G304 -- cachePath is constructed from controlled inputs
 	if b, err := os.ReadFile(cachePath); err == nil {
 		return string(b), nil
 	}
 
 	if strings.HasPrefix(licenseID, "LicenseRef-") {
 		customPath := filepath.Join(cfg.OutLicensesDir, "custom", licenseID+".txt")
-		// #nosec G304 -- customPath is constructed from controlled inputs
 		b, err := os.ReadFile(customPath)
 		if err != nil {
 			return "", fmt.Errorf("unknown license %q: expected custom license text at %s: %w", licenseID, customPath, err)

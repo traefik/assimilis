@@ -28,6 +28,8 @@ linters:
     - wrapcheck
     - wsl
     - wsl_v5
+    - gosec
+    - perfsprint
   settings:
     depguard:
       rules:

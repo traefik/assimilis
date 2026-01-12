@@ -50,7 +50,7 @@ func main() {
 			},
 		},
 		Action: func(ctx context.Context, _ *cli.Command) error {
-			return run(cfg, ctx)
+			return run(ctx, cfg)
 		},
 	}
 
@@ -73,7 +73,7 @@ func validate(cfg generator.Config) error {
 	return nil
 }
 
-func run(cfg generator.Config, ctx context.Context) error {
+func run(ctx context.Context, cfg generator.Config) error {
 	logger.Setup("info")
 	err := validate(cfg)
 	if err != nil {

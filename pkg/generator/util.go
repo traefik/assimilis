@@ -50,10 +50,7 @@ func uniqSorted(in []string) []string {
 	return out
 }
 
-func sanitizeID(s string, maxLen int) string {
+func sanitizeID(s string) string {
 	s = regexp.MustCompile(`[^A-Za-z0-9]+`).ReplaceAllString(s, "-")
-	if len(s) > maxLen {
-		s = s[:maxLen]
-	}
 	return strings.Trim(s, "-")
 }

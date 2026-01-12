@@ -37,7 +37,7 @@ func normalizeLicenseIDs(licenses []LicenseChoice, licenseMap map[string]string,
 				ids = append(ids, extracted)
 				continue
 			}
-			ids = append(ids, "LicenseRef-"+sanitizeID(expr, 40))
+			ids = append(ids, "LicenseRef-"+sanitizeID(expr))
 		}
 	}
 

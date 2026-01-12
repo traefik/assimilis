@@ -1,3 +1,4 @@
+// Package logger provides logging setup and configuration.
 package logger
 
 import (
@@ -10,6 +11,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// Setup configures the logger.
 func Setup(level string) {
 	var w io.Writer = os.Stdout
 	writer := zerolog.ConsoleWriter{
