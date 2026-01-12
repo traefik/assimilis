@@ -29,7 +29,10 @@ func fetchText(ctx context.Context, url string) (string, error) {
 	}
 
 	b, err := io.ReadAll(res.Body)
-	return string(b), fmt.Errorf("failed to read response body from %s: %w", url, err)
+	if err != nil {
+		return "", fmt.Errorf("failed to read response body from %s: %w", url, err)
+	}
+	return string(b), nil
 }
 
 func loadSpdxNameMap(ctx context.Context, spdxVersion string) (map[string]string, error) {
