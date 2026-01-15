@@ -3,7 +3,7 @@ package generator
 import (
 	"testing"
 
-	spdxexp "github.com/khulnasoft/tunnel/pkg/licensing"
+	spdxexp "github.com/aquasecurity/trivy/pkg/licensing"
 	"github.com/stretchr/testify/assert"
 )
 

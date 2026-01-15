@@ -1,10 +1,14 @@
 package generator
 
 import (
+	"regexp"
 	"strings"
 
-	spdxexp "github.com/khulnasoft/tunnel/pkg/licensing"
+	"github.com/aquasecurity/trivy/pkg/licensing"
+	spdxexp "github.com/aquasecurity/trivy/pkg/licensing/expression"
 )
+
+var licenseSplitRegexp = regexp.MustCompile(`(,?[_ ]+(?i:(?:or|and))[_ ]+)|(,[ ]*)`)
 
 func normalizeLicenseIDs(licenses []LicenseChoice, licenseMap map[string]string, spdxNames map[string]string) []string {
 	var ids []string
@@ -33,16 +37,15 @@ func normalizeLicenseIDs(licenses []LicenseChoice, licenseMap map[string]string,
 			continue
 		}
 
-		split := spdxexp.SplitLicenses(strings.ToLower(expr))
+		split := licenseSplitRegexp.Split(expr, -1)
 		for _, l := range split {
-			lic := spdxexp.Normalize(l)
-			if extracted := spdxexp.Normalize(lic); spdxNames[extracted] != "" {
-				ids = append(ids, extracted)
-
+			lic := licensing.Normalize(l)
+			if spdxexp.ValidateSPDXLicense(lic) {
+				ids = append(ids, lic)
 				continue
 			}
 
-			ids = append(ids, "LicenseRef-"+sanitizeID(expr))
+			ids = append(ids, "LicenseRef-"+sanitizeID(lic))
 		}
 	}
 
