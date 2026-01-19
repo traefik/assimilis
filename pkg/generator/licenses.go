@@ -10,7 +10,7 @@ import (
 
 var licenseSplitRegexp = regexp.MustCompile(`(,?[_ ]+(?i:(?:or|and))[_ ]+)|(,[ ]*)`)
 
-func normalizeLicenseIDs(licenses []LicenseChoice, licenseMap map[string]string, spdxNames map[string]string) []string {
+func normalizeLicenseIDs(licenses []LicenseChoice, licenseMap map[string]string) []string {
 	var ids []string
 
 	for _, item := range licenses {
@@ -42,6 +42,7 @@ func normalizeLicenseIDs(licenses []LicenseChoice, licenseMap map[string]string,
 			lic := licensing.Normalize(l)
 			if spdxexp.ValidateSPDXLicense(lic) {
 				ids = append(ids, lic)
+
 				continue
 			}
 

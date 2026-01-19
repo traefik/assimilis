@@ -31,11 +31,10 @@ func Run(ctx context.Context, cfg Config) error {
 		return fmt.Errorf("failed to load inputs: %w", err)
 	}
 
-	// #nosec G301 -- output directory should be readable in artifacts
 	if err = os.MkdirAll(cfg.OutDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
-	// #nosec G301 -- output directory should be readable in artifacts
+
 	if err = os.MkdirAll(cfg.OutLicensesDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create output licenses directory: %w", err)
 	}
@@ -109,7 +108,7 @@ func loadLicenseMap(path string) (map[string]string, error) {
 }
 
 func buildModel(ctx context.Context, cfg Config, sbom SBOM, licenseMap map[string]string, spdxNames map[string]string) (Model, error) {
-	byLicense, byKey := buildIndex(cfg, sbom.Components, licenseMap, spdxNames)
+	byLicense, byKey := buildIndex(cfg, sbom.Components, licenseMap)
 
 	licenses, err := buildLicenseBlocks(ctx, cfg, byLicense, spdxNames)
 	if err != nil {
@@ -211,7 +210,7 @@ func buildLicenseBlocks(ctx context.Context, cfg Config, byLicense map[string][]
 	return licenses, nil
 }
 
-func buildIndex(cfg Config, components []Component, licenseMap map[string]string, spdxNames map[string]string) (map[string][]OutComponent, map[string]OutComponent) {
+func buildIndex(cfg Config, components []Component, licenseMap map[string]string) (map[string][]OutComponent, map[string]OutComponent) {
 	byLicense := map[string][]OutComponent{}
 	byKey := map[string]OutComponent{}
 
@@ -220,7 +219,7 @@ func buildIndex(cfg Config, components []Component, licenseMap map[string]string
 			continue
 		}
 
-		ids := normalizeLicenseIDs(c.Licenses, licenseMap, spdxNames)
+		ids := normalizeLicenseIDs(c.Licenses, licenseMap)
 
 		out := OutComponent{
 			Name:       c.Name,

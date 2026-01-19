@@ -11,18 +11,16 @@ import (
 )
 
 func writeText(p, s string) error {
-	// #nosec G301 -- output directory should be readable in artifacts
 	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
 		return fmt.Errorf("failed to create output directory for %q: %w", p, err)
 	}
 
-	// #nosec G306 -- generated notices should be readable
 	return os.WriteFile(p, []byte(s), 0o644)
 }
 
 func readJSON[T any](path string) (T, error) {
 	var zero T
-	// #nosec G304 -- only reading from trusted paths
+
 	b, err := os.ReadFile(path)
 	if err != nil {
 		return zero, fmt.Errorf("failed to read file %q: %w", path, err)
