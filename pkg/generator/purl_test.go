@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,14 +10,12 @@ import (
 func TestShouldIgnorePURL(t *testing.T) {
 	t.Parallel()
 
-	excludeComponents := ExcludeComponents{}
-	excludeComponents.compile(Filters{
-		PURLRegex: []string{`use\.local`},
-	})
+	filters := Filters{}
+	filters.PURLRegex = []*regexp.Regexp{regexp.MustCompile(`use\.local`)}
 
-	assert.False(t, shouldIgnorePURL(excludeComponents, ""))
-	assert.False(t, shouldIgnorePURL(excludeComponents, "pkg:npm/foo@1.2.30"))
-	assert.True(t, shouldIgnorePURL(excludeComponents, "pkg:golang/use.local/bar@v1.0.0"))
+	assert.False(t, shouldIgnorePURL(filters, ""))
+	assert.False(t, shouldIgnorePURL(filters, "pkg:npm/foo@1.2.30"))
+	assert.True(t, shouldIgnorePURL(filters, "pkg:golang/use.local/bar@v1.0.0"))
 }
 
 func TestComponentURLFromPurl(t *testing.T) {

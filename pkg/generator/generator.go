@@ -73,39 +73,36 @@ func Run(ctx context.Context, cfg Config) error {
 	return nil
 }
 
-func loadInputs(ctx context.Context, cfg Config) (SBOM, ExcludeComponents, map[string]string, map[string]string, error) {
+func loadInputs(ctx context.Context, cfg Config) (SBOM, Filters, map[string]string, map[string]string, error) {
 	sbom, err := readJSON[SBOM](os.ReadFile, filepath.Join(cfg.SBOMPath, cfg.RepoName+".cdx.json"))
 	if err != nil {
-		return SBOM{}, ExcludeComponents{}, nil, nil, fmt.Errorf("failed to read SBOM: %w", err)
+		return SBOM{}, Filters{}, nil, nil, fmt.Errorf("failed to read SBOM: %w", err)
 	}
 
 	filters, err := readJSON[Filters](embedded.ReadFile, filtersPath)
 	if err != nil {
-		return SBOM{}, ExcludeComponents{}, nil, nil, fmt.Errorf("failed to read SBOM: %w", err)
+		return SBOM{}, Filters{}, nil, nil, fmt.Errorf("failed to read SBOM: %w", err)
 	}
-
-	var excludeComponents ExcludeComponents
-	excludeComponents.compile(filters)
 
 	licenseMap, err := readJSON[map[string]string](embedded.ReadFile, licenseMapPath)
 	if err != nil {
-		return SBOM{}, ExcludeComponents{}, nil, nil, fmt.Errorf("failed to read license map: %w", err)
+		return SBOM{}, Filters{}, nil, nil, fmt.Errorf("failed to read license map: %w", err)
 	}
 
 	spdxNames, err := loadSpdxNameMap(ctx, cfg.SPDXVersion)
 	if err != nil {
-		return SBOM{}, ExcludeComponents{}, nil, nil, fmt.Errorf("failed to load SPDX names: %w", err)
+		return SBOM{}, Filters{}, nil, nil, fmt.Errorf("failed to load SPDX names: %w", err)
 	}
 
-	return sbom, excludeComponents, licenseMap, spdxNames, nil
+	return sbom, filters, licenseMap, spdxNames, nil
 }
 
-func shouldIgnoreComponent(c Component, excludeComponents ExcludeComponents) bool {
-	if shouldIgnorePURL(excludeComponents, c.PURL) {
+func shouldIgnoreComponent(c Component, filters Filters) bool {
+	if shouldIgnorePURL(filters, c.PURL) {
 		return true
 	}
 
-	for _, re := range excludeComponents.Suppliers {
+	for _, re := range filters.Suppliers {
 		if re.MatchString(c.Supplier) {
 			return true
 		}
@@ -114,8 +111,8 @@ func shouldIgnoreComponent(c Component, excludeComponents ExcludeComponents) boo
 	return false
 }
 
-func buildModel(ctx context.Context, cfg Config, sbom SBOM, excludeComponents ExcludeComponents, licenseMap map[string]string, spdxNames map[string]string) (Model, error) {
-	byLicense, byKey := buildIndex(sbom.Components, excludeComponents, licenseMap)
+func buildModel(ctx context.Context, cfg Config, sbom SBOM, filters Filters, licenseMap map[string]string, spdxNames map[string]string) (Model, error) {
+	byLicense, byKey := buildIndex(sbom.Components, filters, licenseMap)
 
 	licenses, err := buildLicenseBlocks(ctx, cfg, byLicense, spdxNames)
 	if err != nil {
@@ -217,12 +214,12 @@ func buildLicenseBlocks(ctx context.Context, cfg Config, byLicense map[string][]
 	return licenses, nil
 }
 
-func buildIndex(components []Component, excludeComponents ExcludeComponents, licenseMap map[string]string) (map[string][]OutComponent, map[string]OutComponent) {
+func buildIndex(components []Component, filters Filters, licenseMap map[string]string) (map[string][]OutComponent, map[string]OutComponent) {
 	byLicense := map[string][]OutComponent{}
 	byKey := map[string]OutComponent{}
 
 	for _, c := range components {
-		if shouldIgnoreComponent(c, excludeComponents) {
+		if shouldIgnoreComponent(c, filters) {
 			continue
 		}
 

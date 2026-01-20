@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -35,4 +36,25 @@ func TestBuildNotices_FilterEmptyCopyright(t *testing.T) {
 	require.Equal(t, "bar", out[0].Name)
 	require.Equal(t, "2", out[0].Version)
 	require.Equal(t, "foo", out[1].Name)
+}
+
+func TestShouldIgnoreComponent(t *testing.T) {
+	t.Parallel()
+
+	filters := Filters{
+		PURLRegex: []*regexp.Regexp{
+			regexp.MustCompile(`use\.local`),
+		},
+		Suppliers: []*regexp.Regexp{
+			regexp.MustCompile("^Foo$"),
+		},
+	}
+
+	c1 := Component{PURL: "pkg:golang/github.com/some/repo", Supplier: "Some Supplier"}
+	c2 := Component{PURL: "pkg:npm/foo@1.2.30", Supplier: "Foo"}
+	c3 := Component{PURL: "pkg:golang/use.local/bar@v1.0.0", Supplier: ""}
+
+	require.False(t, shouldIgnoreComponent(c1, filters))
+	require.True(t, shouldIgnoreComponent(c2, filters))
+	require.True(t, shouldIgnoreComponent(c3, filters))
 }
