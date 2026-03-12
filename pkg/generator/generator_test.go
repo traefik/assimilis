@@ -54,17 +54,20 @@ func TestShouldIgnoreComponent(t *testing.T) {
 		PURL: "pkg:golang/github.com/some/repo",
 		Supplier: &struct {
 			Name string `json:"name"`
-		}{Name: "Some Supplier"}}
+		}{Name: "Some Supplier"},
+	}
 	c2 := Component{
 		PURL: "pkg:npm/foo@1.2.30",
 		Supplier: &struct {
 			Name string `json:"name"`
-		}{Name: "Foo"}}
+		}{Name: "Foo"},
+	}
 	c3 := Component{
 		PURL: "pkg:golang/use.local/bar@v1.0.0",
 		Supplier: &struct {
 			Name string `json:"name"`
-		}{Name: ""}}
+		}{Name: ""},
+	}
 
 	require.False(t, shouldIgnoreComponent(c1, filters))
 	require.True(t, shouldIgnoreComponent(c2, filters))
