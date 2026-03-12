@@ -103,7 +103,7 @@ func shouldIgnoreComponent(c Component, filters Filters) bool {
 	}
 
 	for _, re := range filters.Suppliers {
-		if re.MatchString(c.Supplier) {
+		if re.MatchString(c.Supplier.Name) {
 			return true
 		}
 	}
