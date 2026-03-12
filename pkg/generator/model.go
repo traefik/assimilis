@@ -9,12 +9,14 @@ type SBOM struct {
 
 // Component represents a component in the SBOM.
 type Component struct {
-	Name      string          `json:"name"`
-	Version   string          `json:"version"`
-	PURL      string          `json:"purl"`
-	Copyright string          `json:"copyright"`
-	Supplier  string          `json:"supplier"`
-	Licenses  []LicenseChoice `json:"licenses"`
+	Name      string `json:"name"`
+	Version   string `json:"version"`
+	PURL      string `json:"purl"`
+	Copyright string `json:"copyright"`
+	Supplier  *struct {
+		Name string `json:"name"`
+	} `json:"supplier"`
+	Licenses []LicenseChoice `json:"licenses"`
 }
 
 // Filters holds compiled regex patterns for excluding components.
