@@ -12,6 +12,13 @@ type Config struct {
 	OutDir         string
 	OutLicensesDir string
 
+	HTMLFileName   string
+	NoticeFileName string
+
+	LicenseMapPath       string
+	LicenseOverridesPath string
+	FiltersPath          string
+
 	SPDXVersion string
 }
 
@@ -26,6 +33,9 @@ func DefaultConfig() Config {
 
 		OutDir:         outDir,
 		OutLicensesDir: outLicensesDir,
+
+		HTMLFileName:   defaultHTMLFileName,
+		NoticeFileName: defaultNoticeFileName,
 
 		SPDXVersion: "v3.27.0",
 	}
