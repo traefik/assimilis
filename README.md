@@ -32,7 +32,7 @@ By default, it writes:
 
 ### Configuration
 
-```yaml
+```
 NAME:
    assimilis - Generate OSS attribution files
 
@@ -44,12 +44,37 @@ COMMANDS:
    help, h  Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
-   --repo-name string        Name of the repository
-   --html-template string    Override HTML template path (default: embedded)
-   --notice-template string  Override NOTICE template path (default: embedded)
-   --spdx-version string     SPDX license-list-data version/tag (default: "v3.27.0")
-   --help, -h                show help
+   --repo-name string          Name of the repository
+   --output-dir string         Base output directory (default: "third_party")
+   --html-template string      Override HTML template path (default: embedded)
+   --notice-template string    Override NOTICE template path (default: embedded)
+   --spdx-version string       SPDX license-list-data version/tag (default: "v3.27.0")
+   --html-filename string      Output HTML filename (default: "THIRD_PARTY_LICENSES.html")
+   --notice-filename string    Output NOTICE filename (default: "NOTICE.md")
+   --license-map string        Path to external license-map JSON (default: embedded)
+   --license-overrides string  Path to external license-overrides JSON (default: embedded)
+   --filters string            Path to external filters JSON (default: embedded)
+   --help, -h                  show help
 ```
+
+### License Map
+
+Assimilis ships with an embedded `license-map.json` that normalizes non-standard license expressions to SPDX IDs (e.g. `"Python Software Foundation License"` → `"PSF-2.0"`). To provide your own, use `--license-map path/to/license-map.json`.
+
+### License Overrides
+
+When SBOM generators fail to detect a license for a component (e.g. missing `LICENSE` file in the Go module cache, or legacy `package.json` format), Assimilis can apply overrides by PURL prefix. The embedded `license-overrides.json` covers known gaps. To provide your own, use `--license-overrides path/to/license-overrides.json`.
+
+Example:
+
+```json
+{
+    "pkg:golang/std": "BSD-3-Clause",
+    "pkg:npm/config-chain": "MIT"
+}
+```
+
+Override keys are matched as PURL prefixes — `"pkg:golang/std"` matches `"pkg:golang/std@go1.25.3"`. Overrides are only applied when a component has **no license detected**; they never replace an existing license.
 
 ### Custom/Non-SPDX Licenses (LicenseRef-*)
 

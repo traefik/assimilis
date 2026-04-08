@@ -2,12 +2,17 @@ project_name: assimilis
 
 builds:
   - binary: assimilis
-    main: ./cmd/
+    main: ./cmd/assimilis/
 
     env:
       - CGO_ENABLED=0
     flags:
       - -trimpath
+    ldflags:
+      - -s -w
+      - -X github.com/traefik/assimilis/pkg/version.Version={{ .Version }}
+      - -X github.com/traefik/assimilis/pkg/version.Commit={{ .Commit }}
+      - -X github.com/traefik/assimilis/pkg/version.Date={{ .Date }}
 
     goos:
       - windows
