@@ -124,12 +124,53 @@ func TestMatchLicenseOverride_NilMap(t *testing.T) {
 	assert.Empty(t, matchLicenseOverride("pkg:npm/foo@1.0.0", nil))
 }
 
-func TestNormalizeSPDX_InvalidExpression(t *testing.T) {
+func TestNormalizeLicenseIDs_CompoundExpressionWithParentheses(t *testing.T) {
 	t.Parallel()
 
-	// An unparseable expression should be returned as-is.
-	assert.Empty(t, normalizeSPDX(""))
-	assert.Equal(t, "AND", normalizeSPDX("AND"))
+	// Regression: parenthesised expressions used to be regex-split, leaving a
+	// dangling "(" on the first token so nothing matched SPDX and everything
+	// fell through to LicenseRef-.
+	licenses := []LicenseChoice{{Expression: "(Apache-2.0 AND BSD-3-Clause)"}}
+
+	ids := normalizeLicenseIDs(licenses, nil)
+	assert.Equal(t, []string{"Apache-2.0", "BSD-3-Clause"}, ids)
+}
+
+func TestNormalizeLicenseIDs_CompoundExpressionOR(t *testing.T) {
+	t.Parallel()
+
+	licenses := []LicenseChoice{{Expression: "(MIT OR CC0-1.0)"}}
+
+	ids := normalizeLicenseIDs(licenses, nil)
+	assert.Equal(t, []string{"CC0-1.0", "MIT"}, ids)
+}
+
+func TestNormalizeLicenseIDs_CompoundExpressionWithoutParentheses(t *testing.T) {
+	t.Parallel()
+
+	licenses := []LicenseChoice{{Expression: "Apache-2.0 AND BSD-3-Clause"}}
+
+	ids := normalizeLicenseIDs(licenses, nil)
+	assert.Equal(t, []string{"Apache-2.0", "BSD-3-Clause"}, ids)
+}
+
+func TestNormalizeLicenseIDs_CompoundExpressionWithLicenseRef(t *testing.T) {
+	t.Parallel()
+
+	licenses := []LicenseChoice{{Expression: "LicenseRef-Custom OR MIT"}}
+
+	ids := normalizeLicenseIDs(licenses, nil)
+	assert.Equal(t, []string{"LicenseRef-Custom", "MIT"}, ids)
+}
+
+func TestNormalizeLicenseIDs_CompoundExpressionWithLicenseRefMapped(t *testing.T) {
+	t.Parallel()
+
+	licenses := []LicenseChoice{{Expression: "LicenseRef-MIT-X11 OR BSD-3-Clause"}}
+	licenseMap := map[string]string{"LicenseRef-MIT-X11": "MIT"}
+
+	ids := normalizeLicenseIDs(licenses, licenseMap)
+	assert.Equal(t, []string{"BSD-3-Clause", "MIT"}, ids)
 }
 
 func TestNormalizeLicenseIDs_DedupeAndSort(t *testing.T) {

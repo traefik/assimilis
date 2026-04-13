@@ -1,13 +1,10 @@
 package generator
 
 import (
-	"regexp"
 	"strings"
 
 	"github.com/aquasecurity/trivy/pkg/licensing/expression"
 )
-
-var licenseSplitRegexp = regexp.MustCompile(`(,?[_ ]+(?i:(?:or|and))[_ ]+)|(,[ ]*)`)
 
 func normalizeLicenseIDs(licenses []LicenseChoice, licenseMap map[string]string) []string {
 	var ids []string
@@ -48,25 +45,62 @@ func resolveExpression(item LicenseChoice, licenseMap map[string]string) []strin
 		return []string{mapped}
 	}
 
+	// Parse the full expression (handles parentheses and AND/OR/WITH) and let
+	// NormalizeForSPDX replace spaces / invalid runes inside each SimpleExpr so
+	// that names like "Apache 2.0" become "Apache-2.0" before the SPDX lookup.
+	parsed, err := expression.Normalize(expr, expression.NormalizeForSPDX)
+	if err != nil {
+		return []string{resolveSingleLicense(expr, licenseMap)}
+	}
+
 	var ids []string
-
-	for _, l := range licenseSplitRegexp.Split(expr, -1) {
-		normalized := normalizeSPDX(l)
-		if spdxID, ok := expression.SPDXLicenseID(normalized); ok {
-			ids = append(ids, spdxID)
-
-			continue
-		}
-
-		licRef := "LicenseRef-" + sanitizeID(l)
-		if mapped, ok := licenseMap[licRef]; ok && mapped != "" {
-			ids = append(ids, mapped)
-		} else {
-			ids = append(ids, licRef)
-		}
+	for _, lic := range collectSimpleLicenses(parsed) {
+		ids = append(ids, resolveSingleLicense(lic, licenseMap))
 	}
 
 	return ids
+}
+
+// collectSimpleLicenses walks the parsed license expression and returns the
+// SPDX-like string of every leaf SimpleExpr, in left-to-right order.
+func collectSimpleLicenses(e expression.Expression) []string {
+	switch v := e.(type) {
+	case expression.SimpleExpr:
+		return []string{v.String()}
+	case expression.CompoundExpr:
+		return append(collectSimpleLicenses(v.Left()), collectSimpleLicenses(v.Right())...)
+	}
+
+	return nil
+}
+
+// resolveSingleLicense turns one already-cleaned token into its final ID:
+// licenseMap override, canonical SPDX ID, or a LicenseRef- fallback (which can
+// itself be remapped by licenseMap).
+func resolveSingleLicense(lic string, licenseMap map[string]string) string {
+	if mapped, ok := licenseMap[lic]; ok && mapped != "" {
+		return mapped
+	}
+
+	if spdxID, ok := expression.SPDXLicenseID(lic); ok {
+		return spdxID
+	}
+
+	// Pass-through any LicenseRef-* the SBOM already provided.
+	if strings.HasPrefix(lic, "LicenseRef-") {
+		if mapped, ok := licenseMap[lic]; ok && mapped != "" {
+			return mapped
+		}
+
+		return lic
+	}
+
+	licRef := "LicenseRef-" + sanitizeID(lic)
+	if mapped, ok := licenseMap[licRef]; ok && mapped != "" {
+		return mapped
+	}
+
+	return licRef
 }
 
 // matchLicenseOverride checks if a PURL matches any entry in license overrides.
@@ -96,15 +130,6 @@ func matchLicenseOverride(purl string, overrides map[string]string) string {
 	}
 
 	return ""
-}
-
-func normalizeSPDX(license string) string {
-	expr, err := expression.Normalize(license)
-	if err != nil {
-		return license
-	}
-
-	return expression.NormalizeForSPDX(expr).String()
 }
 
 func firstNonEmpty(a string, b func() string) string {
