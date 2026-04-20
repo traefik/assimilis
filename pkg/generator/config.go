@@ -15,9 +15,9 @@ type Config struct {
 	HTMLFileName   string
 	NoticeFileName string
 
-	LicenseMapPath       string
-	LicenseOverridesPath string
-	FiltersPath          string
+	LicenseMapPath         string
+	LicenseCorrectionsPath string
+	FiltersPath            string
 
 	SPDXVersion string
 }

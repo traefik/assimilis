@@ -103,8 +103,10 @@ func resolveSingleLicense(lic string, licenseMap map[string]string) string {
 	return licRef
 }
 
-// matchLicenseOverride checks if a PURL matches any entry in license overrides.
-// Override keys are PURL prefixes: "pkg:golang/std" matches "pkg:golang/std@go1.25.3".
+// matchLicenseOverride checks if a PURL matches any entry in license-corrections.json.
+// Keys are PURL prefixes: "pkg:golang/std" matches "pkg:golang/std@go1.25.3", and
+// "pkg:golang/github.com/foo/bar" matches sub-packages like
+// "pkg:golang/github.com/foo/bar/v2/sub@v2.1.0".
 func matchLicenseOverride(purl string, overrides map[string]string) string {
 	if overrides == nil {
 		return ""
@@ -121,10 +123,17 @@ func matchLicenseOverride(purl string, overrides map[string]string) string {
 		return id
 	}
 
-	// Try prefix match: strip version ("@...") and check.
+	// Strip version ("@...") before prefix matching.
 	if idx := strings.LastIndex(clean, "@"); idx != -1 {
-		prefix := clean[:idx]
-		if id, ok := overrides[prefix]; ok {
+		clean = clean[:idx]
+	}
+
+	// Check whether any override key is a prefix of the version-stripped PURL.
+	// This handles sub-packages and Go major versions embedded in the path
+	// (e.g. key "pkg:golang/github.com/nrdcg/oci-go-sdk" matches
+	// "pkg:golang/github.com/nrdcg/oci-go-sdk/v65/common@v65.0.0").
+	for key, id := range overrides {
+		if clean == key || strings.HasPrefix(clean, key+"/") {
 			return id
 		}
 	}

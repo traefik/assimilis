@@ -96,9 +96,9 @@ func buildFlags(cfg *generator.Config) []cli.Flag {
 			Destination: &cfg.LicenseMapPath,
 		},
 		&cli.StringFlag{
-			Name:        "license-overrides",
-			Usage:       "Path to external license-overrides JSON (default: embedded)",
-			Destination: &cfg.LicenseOverridesPath,
+			Name:        "license-corrections",
+			Usage:       "Path to external license-corrections JSON (default: embedded)",
+			Destination: &cfg.LicenseCorrectionsPath,
 		},
 		&cli.StringFlag{
 			Name:        "filters",

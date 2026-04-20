@@ -28,7 +28,7 @@ func (e UnknownLicensesError) Error() string {
 
 // Run executes the generator with the given configuration.
 func Run(ctx context.Context, cfg Config) error {
-	sbom, excludeComponents, licenseMap, licenseOverrides, spdxNames, err := loadInputs(ctx, cfg)
+	sbom, excludeComponents, licenseMap, licenseCorrections, spdxNames, err := loadInputs(ctx, cfg)
 	if err != nil {
 		return fmt.Errorf("failed to load inputs: %w", err)
 	}
@@ -41,7 +41,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return fmt.Errorf("failed to create output licenses directory: %w", err)
 	}
 
-	model, err := buildModel(ctx, cfg, sbom, excludeComponents, licenseMap, licenseOverrides, spdxNames)
+	model, err := buildModel(ctx, cfg, sbom, excludeComponents, licenseMap, licenseCorrections, spdxNames)
 	if err != nil {
 		return fmt.Errorf("failed to build model: %w", err)
 	}
@@ -101,9 +101,9 @@ func loadInputs(ctx context.Context, cfg Config) (SBOM, Filters, map[string]stri
 		return SBOM{}, Filters{}, nil, nil, nil, fmt.Errorf("failed to read license map: %w", err)
 	}
 
-	licenseOverrides, err := readJSONData[map[string]string](cfg.LicenseOverridesPath, embeddedLicenseOverridesPath)
+	licenseCorrections, err := readJSONData[map[string]string](cfg.LicenseCorrectionsPath, embeddedLicenseCorrectionsPath)
 	if err != nil {
-		return SBOM{}, Filters{}, nil, nil, nil, fmt.Errorf("failed to read license overrides: %w", err)
+		return SBOM{}, Filters{}, nil, nil, nil, fmt.Errorf("failed to read license corrections: %w", err)
 	}
 
 	spdxNames, err := loadSpdxNameMap(ctx, cfg.SPDXVersion)
@@ -111,7 +111,7 @@ func loadInputs(ctx context.Context, cfg Config) (SBOM, Filters, map[string]stri
 		return SBOM{}, Filters{}, nil, nil, nil, fmt.Errorf("failed to load SPDX names: %w", err)
 	}
 
-	return sbom, filters, licenseMap, licenseOverrides, spdxNames, nil
+	return sbom, filters, licenseMap, licenseCorrections, spdxNames, nil
 }
 
 func shouldIgnoreComponent(c Component, filters Filters) bool {
@@ -130,8 +130,8 @@ func shouldIgnoreComponent(c Component, filters Filters) bool {
 	return false
 }
 
-func buildModel(ctx context.Context, cfg Config, sbom SBOM, filters Filters, licenseMap, licenseOverrides, spdxNames map[string]string) (Model, error) {
-	byLicense, byKey := buildIndex(sbom.Components, filters, licenseMap, licenseOverrides)
+func buildModel(ctx context.Context, cfg Config, sbom SBOM, filters Filters, licenseMap, licenseCorrections, spdxNames map[string]string) (Model, error) {
+	byLicense, byKey := buildIndex(sbom.Components, filters, licenseMap, licenseCorrections)
 
 	licenses, err := buildLicenseBlocks(ctx, cfg, byLicense, spdxNames)
 	if err != nil {
@@ -233,7 +233,7 @@ func buildLicenseBlocks(ctx context.Context, cfg Config, byLicense map[string][]
 	return licenses, nil
 }
 
-func buildIndex(components []Component, filters Filters, licenseMap, licenseOverrides map[string]string) (map[string][]OutComponent, map[string]OutComponent) {
+func buildIndex(components []Component, filters Filters, licenseMap, licenseCorrections map[string]string) (map[string][]OutComponent, map[string]OutComponent) {
 	byLicense := map[string][]OutComponent{}
 	byKey := map[string]OutComponent{}
 
@@ -244,11 +244,10 @@ func buildIndex(components []Component, filters Filters, licenseMap, licenseOver
 
 		ids := normalizeLicenseIDs(c.Licenses, licenseMap)
 
-		// When no license was detected, try to match the component's PURL against
-		// license-overrides.json entries. Overrides use PURL prefixes so that
-		// "pkg:golang/std" matches "pkg:golang/std@go1.25.3".
-		if len(ids) == 0 && c.PURL != "" {
-			if id := matchLicenseOverride(c.PURL, licenseOverrides); id != "" {
+		// Apply license-corrections.json: entries take priority over whatever the SBOM
+		// reported, so they can both fill in absent licenses and correct wrong ones.
+		if c.PURL != "" {
+			if id := matchLicenseOverride(c.PURL, licenseCorrections); id != "" {
 				ids = []string{id}
 			}
 		}

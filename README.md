@@ -52,7 +52,7 @@ GLOBAL OPTIONS:
    --html-filename string      Output HTML filename (default: "THIRD_PARTY_LICENSES.html")
    --notice-filename string    Output NOTICE filename (default: "NOTICE.md")
    --license-map string        Path to external license-map JSON (default: embedded)
-   --license-overrides string  Path to external license-overrides JSON (default: embedded)
+   --license-corrections string   Path to external license-corrections JSON (default: embedded)
    --filters string            Path to external filters JSON (default: embedded)
    --help, -h                  show help
 ```
@@ -61,9 +61,9 @@ GLOBAL OPTIONS:
 
 Assimilis ships with an embedded `license-map.json` that normalizes non-standard license expressions to SPDX IDs (e.g. `"Python Software Foundation License"` → `"PSF-2.0"`). To provide your own, use `--license-map path/to/license-map.json`.
 
-### License Overrides
+### Missing Licenses
 
-When SBOM generators fail to detect a license for a component (e.g. missing `LICENSE` file in the Go module cache, or legacy `package.json` format), Assimilis can apply overrides by PURL prefix. The embedded `license-overrides.json` covers known gaps. To provide your own, use `--license-overrides path/to/license-overrides.json`.
+Assimilis can apply per-PURL license corrections via `license-corrections.json`. Entries take priority over whatever the SBOM reported, so they can both fill in absent licenses (when the SBOM generator failed to detect one) and correct wrong ones (when the SBOM generator reported an incorrect license). The embedded `license-corrections.json` covers known gaps. To provide your own, use `--license-corrections path/to/license-corrections.json`.
 
 Example:
 
@@ -74,7 +74,7 @@ Example:
 }
 ```
 
-Override keys are matched as PURL prefixes — `"pkg:golang/std"` matches `"pkg:golang/std@go1.25.3"`. Overrides are only applied when a component has **no license detected**; they never replace an existing license.
+Keys are matched as PURL prefixes — `"pkg:golang/std"` matches `"pkg:golang/std@go1.25.3"`, and `"pkg:golang/github.com/foo/bar"` matches sub-packages like `"pkg:golang/github.com/foo/bar/v2/sub@v2.1.0"`.
 
 ### Custom/Non-SPDX Licenses (LicenseRef-*)
 

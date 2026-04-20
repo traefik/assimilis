@@ -1,0 +1,21 @@
+{
+    "pkg:golang/std": "BSD-3-Clause",
+    "pkg:golang/golang.org/x/crypto": "BSD-3-Clause",
+    "pkg:golang/golang.org/x/exp": "BSD-3-Clause",
+    "pkg:golang/golang.org/x/mod": "BSD-3-Clause",
+    "pkg:golang/golang.org/x/net": "BSD-3-Clause",
+    "pkg:golang/golang.org/x/oauth2": "BSD-3-Clause",
+    "pkg:golang/golang.org/x/sync": "BSD-3-Clause",
+    "pkg:golang/golang.org/x/sys": "BSD-3-Clause",
+    "pkg:golang/golang.org/x/term": "BSD-3-Clause",
+    "pkg:golang/golang.org/x/text": "BSD-3-Clause",
+    "pkg:golang/golang.org/x/time": "BSD-3-Clause",
+    "pkg:golang/golang.org/x/tools": "BSD-3-Clause",
+    "pkg:golang/github.com/opencontainers/go-digest": "Apache-2.0",
+    "pkg:golang/github.com/ghodss/yaml": "MIT",
+    "pkg:golang/github.com/go-acme/tencentclouddnspod": "Apache-2.0",
+    "pkg:golang/github.com/nrdcg/oci-go-sdk": "UPL-1.0",
+    "pkg:golang/github.com/smartystreets/go-aws-auth": "MIT",
+    "pkg:npm/config-chain": "MIT",
+    "pkg:npm/glob-regex": "MIT"
+}

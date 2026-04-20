@@ -72,7 +72,7 @@ func TestBuildIndex_LicenseOverrideForComponentWithoutLicense(t *testing.T) {
 	require.Equal(t, []string{"BSD-3-Clause"}, byKey["pkg:golang/std@go1.25.3"].LicenseIDs)
 }
 
-func TestBuildIndex_OverrideNotAppliedWhenLicenseExists(t *testing.T) {
+func TestBuildIndex_OverrideReplacesExistingLicense(t *testing.T) {
 	t.Parallel()
 
 	components := []Component{
@@ -89,8 +89,8 @@ func TestBuildIndex_OverrideNotAppliedWhenLicenseExists(t *testing.T) {
 
 	_, byKey := buildIndex(components, Filters{}, nil, overrides)
 
-	// Override should NOT replace an existing license.
-	require.Equal(t, []string{"Apache-2.0"}, byKey["pkg:npm/foo@1.0.0"].LicenseIDs)
+	// missing-licenses entries take priority and correct wrong licenses from the SBOM.
+	require.Equal(t, []string{"MIT"}, byKey["pkg:npm/foo@1.0.0"].LicenseIDs)
 }
 
 func TestBuildIndex_MergesDuplicateComponents(t *testing.T) {

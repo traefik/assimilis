@@ -118,6 +118,21 @@ func TestMatchLicenseOverride_StripsQualifiers(t *testing.T) {
 	assert.Equal(t, "MIT", matchLicenseOverride("pkg:golang/github.com/ghodss/yaml@v1.0.0?goarch=arm64&goos=darwin&type=module", overrides))
 }
 
+func TestMatchLicenseOverride_SubPackageAndMajorVersion(t *testing.T) {
+	t.Parallel()
+
+	overrides := map[string]string{
+		"pkg:golang/github.com/nrdcg/oci-go-sdk": "UPL-1.0",
+	}
+
+	// Sub-package with embedded major version in path.
+	assert.Equal(t, "UPL-1.0", matchLicenseOverride("pkg:golang/github.com/nrdcg/oci-go-sdk/v65/common@v65.0.0", overrides))
+	// Direct module with version only.
+	assert.Equal(t, "UPL-1.0", matchLicenseOverride("pkg:golang/github.com/nrdcg/oci-go-sdk@v65.0.0", overrides))
+	// Unrelated package must not match.
+	assert.Empty(t, matchLicenseOverride("pkg:golang/github.com/other/pkg@v1.0.0", overrides))
+}
+
 func TestMatchLicenseOverride_NilMap(t *testing.T) {
 	t.Parallel()
 
