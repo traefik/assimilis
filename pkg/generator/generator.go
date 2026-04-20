@@ -131,7 +131,8 @@ func shouldIgnoreComponent(c Component, filters Filters) bool {
 }
 
 func buildModel(ctx context.Context, cfg Config, sbom SBOM, filters Filters, licenseMap, licenseCorrections, spdxNames map[string]string) (Model, error) {
-	byLicense, byKey := buildIndex(sbom.Components, filters, licenseMap, licenseCorrections)
+	enricher := newCopyrightEnricher(cfg)
+	byLicense, byKey := buildIndex(sbom.Components, filters, licenseMap, licenseCorrections, enricher)
 
 	licenses, err := buildLicenseBlocks(ctx, cfg, byLicense, spdxNames)
 	if err != nil {
@@ -233,10 +234,9 @@ func buildLicenseBlocks(ctx context.Context, cfg Config, byLicense map[string][]
 	return licenses, nil
 }
 
-func buildIndex(components []Component, filters Filters, licenseMap, licenseCorrections map[string]string) (map[string][]OutComponent, map[string]OutComponent) {
+func buildIndex(components []Component, filters Filters, licenseMap, licenseCorrections map[string]string, enricher copyrightEnricher) (map[string][]OutComponent, map[string]OutComponent) {
 	byLicense := map[string][]OutComponent{}
 	byKey := map[string]OutComponent{}
-	gomodcache := goModCache()
 
 	for _, c := range components {
 		if shouldIgnoreComponent(c, filters) {
@@ -253,18 +253,13 @@ func buildIndex(components []Component, filters Filters, licenseMap, licenseCorr
 			}
 		}
 
-		copyright := c.Copyright
-		if copyright == "" && strings.HasPrefix(c.PURL, "pkg:golang/") {
-			copyright = extractGoCopyrightFromCache(gomodcache, c.PURL)
-		}
-
 		out := OutComponent{
 			Name:       c.Name,
 			Version:    c.Version,
 			PURL:       c.PURL,
 			URL:        componentURLFromPurl(c.PURL),
 			LicenseIDs: ids,
-			Copyright:  copyright,
+			Copyright:  enricher.enrich(c.PURL, c.Copyright),
 		}
 
 		out = mergeOrInsert(byKey, c, out)

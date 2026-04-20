@@ -105,6 +105,16 @@ func buildFlags(cfg *generator.Config) []cli.Flag {
 			Usage:       "Path to external filters JSON (default: embedded)",
 			Destination: &cfg.FiltersPath,
 		},
+		&cli.StringFlag{
+			Name:        "node-modules-dir",
+			Usage:       "Path to node_modules directory for npm copyright extraction (default: auto-detect)",
+			Destination: &cfg.NodeModulesDir,
+		},
+		&cli.StringFlag{
+			Name:        "python-site-packages-dir",
+			Usage:       "Path to Python site-packages directory for PyPI copyright extraction",
+			Destination: &cfg.PythonSitePackagesDir,
+		},
 	}
 }
 

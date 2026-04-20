@@ -65,7 +65,7 @@ func TestBuildIndex_LicenseOverrideForComponentWithoutLicense(t *testing.T) {
 		"pkg:golang/std": "BSD-3-Clause",
 	}
 
-	byLicense, byKey := buildIndex(components, Filters{}, nil, overrides)
+	byLicense, byKey := buildIndex(components, Filters{}, nil, overrides, copyrightEnricher{})
 
 	require.Contains(t, byLicense, "BSD-3-Clause")
 	require.Contains(t, byLicense, "MIT")
@@ -87,7 +87,7 @@ func TestBuildIndex_OverrideReplacesExistingLicense(t *testing.T) {
 		"pkg:npm/foo": "MIT",
 	}
 
-	_, byKey := buildIndex(components, Filters{}, nil, overrides)
+	_, byKey := buildIndex(components, Filters{}, nil, overrides, copyrightEnricher{})
 
 	// missing-licenses entries take priority and correct wrong licenses from the SBOM.
 	require.Equal(t, []string{"MIT"}, byKey["pkg:npm/foo@1.0.0"].LicenseIDs)
@@ -111,7 +111,7 @@ func TestBuildIndex_MergesDuplicateComponents(t *testing.T) {
 		}},
 	}
 
-	_, byKey := buildIndex(components, Filters{}, nil, nil)
+	_, byKey := buildIndex(components, Filters{}, nil, nil, copyrightEnricher{})
 
 	merged := byKey["pkg:npm/foo@1.0.0"]
 	require.Equal(t, []string{"Apache-2.0", "MIT"}, merged.LicenseIDs)

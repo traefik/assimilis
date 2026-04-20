@@ -19,6 +19,9 @@ type Config struct {
 	LicenseCorrectionsPath string
 	FiltersPath            string
 
+	NodeModulesDir        string
+	PythonSitePackagesDir string
+
 	SPDXVersion string
 }
 

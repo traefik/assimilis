@@ -20,7 +20,6 @@
     <div class="intro">
       <h1>Third Party Licenses</h1>
       <p>This product includes third-party open source components. This page lists the licenses for those components.</p>
-      <p><small>Generated: {{.GeneratedAt}}</small></p>
     </div>
 
     <h2>Overview of licenses</h2>
