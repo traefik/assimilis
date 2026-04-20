@@ -236,6 +236,7 @@ func buildLicenseBlocks(ctx context.Context, cfg Config, byLicense map[string][]
 func buildIndex(components []Component, filters Filters, licenseMap, licenseCorrections map[string]string) (map[string][]OutComponent, map[string]OutComponent) {
 	byLicense := map[string][]OutComponent{}
 	byKey := map[string]OutComponent{}
+	gomodcache := goModCache()
 
 	for _, c := range components {
 		if shouldIgnoreComponent(c, filters) {
@@ -252,13 +253,18 @@ func buildIndex(components []Component, filters Filters, licenseMap, licenseCorr
 			}
 		}
 
+		copyright := c.Copyright
+		if copyright == "" && strings.HasPrefix(c.PURL, "pkg:golang/") {
+			copyright = extractGoCopyrightFromCache(gomodcache, c.PURL)
+		}
+
 		out := OutComponent{
 			Name:       c.Name,
 			Version:    c.Version,
 			PURL:       c.PURL,
 			URL:        componentURLFromPurl(c.PURL),
 			LicenseIDs: ids,
-			Copyright:  c.Copyright,
+			Copyright:  copyright,
 		}
 
 		out = mergeOrInsert(byKey, c, out)
