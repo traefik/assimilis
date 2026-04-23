@@ -10,12 +10,15 @@ import (
 func TestUnknownLicensesError_IncludesIDs(t *testing.T) {
 	t.Parallel()
 
-	err := UnknownLicensesError{IDs: []string{"LicenseRef-MIT-X11", "LicenseRef-Unknown"}}
+	err := UnknownLicensesError{
+		IDs:              []string{"LicenseRef-MIT-X11", "LicenseRef-Unknown"},
+		CustomLicenseDir: "third_party/licenses/custom",
+	}
 	msg := err.Error()
 
-	require.Contains(t, msg, "LicenseRef-MIT-X11")
-	require.Contains(t, msg, "LicenseRef-Unknown")
-	require.Contains(t, msg, "custom")
+	require.Contains(t, err.IDs, "LicenseRef-MIT-X11")
+	require.Contains(t, err.IDs, "LicenseRef-Unknown")
+	require.Contains(t, msg, "third_party/licenses/custom")
 }
 
 func TestBuildOverview_SortByCountAndID(t *testing.T) {

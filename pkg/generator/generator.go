@@ -16,13 +16,19 @@ var embedded embed.FS
 
 // UnknownLicensesError indicates that some license expressions could not be resolved.
 type UnknownLicensesError struct {
-	IDs []string
+	IDs              []string
+	CustomLicenseDir string
 }
 
 func (e UnknownLicensesError) Error() string {
+	customDir := e.CustomLicenseDir
+	if strings.TrimSpace(customDir) == "" {
+		customDir = "<out-licenses-dir>/custom"
+	}
+
 	return fmt.Sprintf(
-		"Unknown license expressions found. Map them to valid SPDX IDs in the license-map or add custom license texts under <out-licenses-dir>/custom/<id>.txt. unknown_licenses=%q",
-		e.IDs,
+		"Unknown license expressions found. Map them to valid SPDX IDs in the license-map or add custom license texts under %s/<unknown_license>.txt.",
+		customDir,
 	)
 }
 
@@ -228,7 +234,10 @@ func buildLicenseBlocks(ctx context.Context, cfg Config, byLicense map[string][]
 	}
 
 	if len(unknowns) > 0 {
-		return nil, UnknownLicensesError{IDs: unknowns}
+		return nil, UnknownLicensesError{
+			IDs:              unknowns,
+			CustomLicenseDir: filepath.Join(cfg.OutLicensesDir, "custom"),
+		}
 	}
 
 	return licenses, nil

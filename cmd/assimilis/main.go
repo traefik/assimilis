@@ -36,7 +36,8 @@ func main() {
 		if errors.As(err, &unknownErr) {
 			log.Fatal().
 				Err(unknownErr).
-				Msg("Unknown license expressions found")
+				Strs("unknown_licenses", unknownErr.IDs).
+				Msg("Unknown license expressions found.")
 		}
 
 		log.Fatal().Err(err).Msg("Application error")
