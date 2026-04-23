@@ -111,7 +111,12 @@ func TestExtractNpmCopyright_PackageJSONAuthorString(t *testing.T) {
 	require.NoError(t, os.MkdirAll(pkgDir, 0o755))
 
 	pkg := map[string]any{"author": "Jane Doe <jane@example.com> (https://jane.dev)"}
-	data, _ := json.Marshal(pkg)
+
+	data, err := json.Marshal(pkg)
+	if err != nil {
+		t.Fatalf("Failed to marshal package.json: %v", err)
+	}
+
 	require.NoError(t, os.WriteFile(filepath.Join(pkgDir, "package.json"), data, 0o644))
 
 	got := extractNpmCopyright(dir, "pkg:npm/some-pkg@1.0.0")
@@ -126,7 +131,12 @@ func TestExtractNpmCopyright_PackageJSONAuthorObject(t *testing.T) {
 	require.NoError(t, os.MkdirAll(pkgDir, 0o755))
 
 	pkg := map[string]any{"author": map[string]any{"name": "Acme Corp", "email": "hi@acme.com"}}
-	data, _ := json.Marshal(pkg)
+
+	data, err := json.Marshal(pkg)
+	if err != nil {
+		t.Fatalf("Failed to marshal package.json: %v", err)
+	}
+
 	require.NoError(t, os.WriteFile(filepath.Join(pkgDir, "package.json"), data, 0o644))
 
 	got := extractNpmCopyright(dir, "pkg:npm/some-pkg@1.0.0")
@@ -159,6 +169,7 @@ func TestExtractPythonCopyright(t *testing.T) {
 	dir := t.TempDir()
 	distInfo := filepath.Join(dir, "requests-2.28.0.dist-info")
 	require.NoError(t, os.MkdirAll(distInfo, 0o755))
+
 	metadata := "Metadata-Version: 2.1\nName: requests\nVersion: 2.28.0\nAuthor: Kenneth Reitz\nAuthor-email: me@kennethreitz.org\n"
 	require.NoError(t, os.WriteFile(filepath.Join(distInfo, "METADATA"), []byte(metadata), 0o644))
 
@@ -173,6 +184,7 @@ func TestExtractPythonCopyright_HyphenToUnderscore(t *testing.T) {
 	// Packaging tool stored it with underscores
 	distInfo := filepath.Join(dir, "black_formatter-24.1.0.dist-info")
 	require.NoError(t, os.MkdirAll(distInfo, 0o755))
+
 	metadata := "Metadata-Version: 2.1\nName: black-formatter\nVersion: 24.1.0\nAuthor: Łukasz Langa\n"
 	require.NoError(t, os.WriteFile(filepath.Join(distInfo, "METADATA"), []byte(metadata), 0o644))
 

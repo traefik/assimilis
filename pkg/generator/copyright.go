@@ -136,6 +136,7 @@ func extractNpmCopyright(nodeModulesDir, purl string) string {
 
 	pkgDir := filepath.Join(nodeModulesDir, filepath.FromSlash(name))
 
+	//nolint:misspell // support British spelling
 	for _, filename := range []string{"LICENSE", "LICENSE.md", "LICENSE.txt", "LICENCE", "LICENCE.md"} {
 		if c := firstCopyrightLine(readFileText(filepath.Join(pkgDir, filename))); c != "" {
 			return c
@@ -145,7 +146,7 @@ func extractNpmCopyright(nodeModulesDir, purl string) string {
 	return npmAuthorCopyright(filepath.Join(pkgDir, "package.json"))
 }
 
-func parseNpmPURL(purl string) (name, version string) {
+func parseNpmPURL(purl string) (string, string) {
 	if idx := strings.Index(purl, "?"); idx != -1 {
 		purl = purl[:idx]
 	}
@@ -261,7 +262,7 @@ func extractPythonCopyright(sitePackagesDir, purl string) string {
 }
 
 func pythonAuthorCopyright(metadata string) string {
-	for _, line := range strings.Split(metadata, "\n") {
+	for line := range strings.SplitSeq(metadata, "\n") {
 		author, ok := strings.CutPrefix(strings.TrimSpace(line), "Author: ")
 		if !ok {
 			continue
@@ -281,7 +282,7 @@ func pythonAuthorCopyright(metadata string) string {
 // firstCopyrightLine returns the first line in text that starts with "Copyright"
 // (case-insensitive), trimmed of surrounding whitespace.
 func firstCopyrightLine(text string) string {
-	for _, line := range strings.Split(text, "\n") {
+	for line := range strings.SplitSeq(text, "\n") {
 		trimmed := strings.TrimSpace(line)
 		if strings.HasPrefix(strings.ToLower(trimmed), "copyright") {
 			return trimmed
