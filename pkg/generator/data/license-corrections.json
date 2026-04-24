@@ -17,5 +17,8 @@
     "pkg:golang/github.com/nrdcg/oci-go-sdk": "MIT",
     "pkg:golang/github.com/smartystreets/go-aws-auth": "MIT",
     "pkg:npm/config-chain": "MIT",
-    "pkg:npm/glob-regex": "MIT"
+    "pkg:npm/glob-regex": "MIT",
+    "pkg:golang/github.com/blendle/zapdriver": "ISC",
+    "pkg:golang/github.com/davecgh/go-spew": "ISC",
+    "pkg:golang/github.com/gogo/protobuf": "BSD-3-Clause"
 }
