@@ -1,0 +1,2 @@
+# Force LF line endings to avoid gci false positives on Windows (daixiang0/gci#212).
+* text=auto eol=lf

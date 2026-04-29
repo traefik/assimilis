@@ -52,9 +52,13 @@ linters:
       - linters:
           - funlen
         path: (.+)_test.go
-      - path: cmd/version.go
-        text: (version|date|commit) is a global variable
-      - path: cmd/version.go
+      - linters:
+          - funlen
+        path: cmd/assimilis/main.go
+        text: Function 'buildFlags'
+      - path: pkg/version/version.go
+        text: (Version|Date|Commit) is a global variable
+      - path: pkg/version/version.go
         text: use of `fmt.Printf` forbidden by pattern
     paths:
       - third_party$

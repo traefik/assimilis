@@ -16,16 +16,25 @@ var embedded embed.FS
 
 // UnknownLicensesError indicates that some license expressions could not be resolved.
 type UnknownLicensesError struct {
-	IDs []string
+	IDs              []string
+	CustomLicenseDir string
 }
 
 func (e UnknownLicensesError) Error() string {
-	return "Unknown license expressions found"
+	customDir := e.CustomLicenseDir
+	if strings.TrimSpace(customDir) == "" {
+		customDir = "<out-licenses-dir>/custom"
+	}
+
+	return fmt.Sprintf(
+		"Unknown license expressions found. Map them to valid SPDX IDs in the license-map or add custom license texts under %s/<unknown_license>.txt.",
+		customDir,
+	)
 }
 
 // Run executes the generator with the given configuration.
 func Run(ctx context.Context, cfg Config) error {
-	sbom, excludeComponents, licenseMap, spdxNames, err := loadInputs(ctx, cfg)
+	sbom, excludeComponents, licenseMap, licenseCorrections, spdxNames, err := loadInputs(ctx, cfg)
 	if err != nil {
 		return fmt.Errorf("failed to load inputs: %w", err)
 	}
@@ -38,7 +47,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return fmt.Errorf("failed to create output licenses directory: %w", err)
 	}
 
-	model, err := buildModel(ctx, cfg, sbom, excludeComponents, licenseMap, spdxNames)
+	model, err := buildModel(ctx, cfg, sbom, excludeComponents, licenseMap, licenseCorrections, spdxNames)
 	if err != nil {
 		return fmt.Errorf("failed to build model: %w", err)
 	}
@@ -53,8 +62,8 @@ func Run(ctx context.Context, cfg Config) error {
 		return fmt.Errorf("failed to render notice output: %w", err)
 	}
 
-	tpnDir := filepath.Join(cfg.OutDir, outHTMLFileName)
-	nDir := filepath.Join(cfg.OutDir, outNoticeFileName)
+	tpnDir := filepath.Join(cfg.OutDir, cfg.HTMLFileName)
+	nDir := filepath.Join(cfg.OutDir, cfg.NoticeFileName)
 
 	if err := writeText(tpnDir, htmlOut); err != nil {
 		return fmt.Errorf("failed to write HTML output: %w", err)
@@ -73,28 +82,42 @@ func Run(ctx context.Context, cfg Config) error {
 	return nil
 }
 
-func loadInputs(ctx context.Context, cfg Config) (SBOM, Filters, map[string]string, map[string]string, error) {
+// readJSONData reads a JSON file from an external path if provided, or falls back to the embedded default.
+func readJSONData[T any](externalPath, embeddedPath string) (T, error) {
+	if externalPath != "" {
+		return readJSON[T](os.ReadFile, externalPath)
+	}
+
+	return readJSON[T](embedded.ReadFile, embeddedPath)
+}
+
+func loadInputs(ctx context.Context, cfg Config) (SBOM, Filters, map[string]string, map[string]string, map[string]string, error) {
 	sbom, err := readJSON[SBOM](os.ReadFile, filepath.Join(cfg.SBOMPath, cfg.RepoName+".cdx.json"))
 	if err != nil {
-		return SBOM{}, Filters{}, nil, nil, fmt.Errorf("failed to read SBOM: %w", err)
+		return SBOM{}, Filters{}, nil, nil, nil, fmt.Errorf("failed to read SBOM: %w", err)
 	}
 
-	filters, err := readJSON[Filters](embedded.ReadFile, filtersPath)
+	filters, err := readJSONData[Filters](cfg.FiltersPath, embeddedFiltersPath)
 	if err != nil {
-		return SBOM{}, Filters{}, nil, nil, fmt.Errorf("failed to read SBOM: %w", err)
+		return SBOM{}, Filters{}, nil, nil, nil, fmt.Errorf("failed to read filters: %w", err)
 	}
 
-	licenseMap, err := readJSON[map[string]string](embedded.ReadFile, licenseMapPath)
+	licenseMap, err := readJSONData[map[string]string](cfg.LicenseMapPath, embeddedLicenseMapPath)
 	if err != nil {
-		return SBOM{}, Filters{}, nil, nil, fmt.Errorf("failed to read license map: %w", err)
+		return SBOM{}, Filters{}, nil, nil, nil, fmt.Errorf("failed to read license map: %w", err)
+	}
+
+	licenseCorrections, err := readJSONData[map[string]string](cfg.LicenseCorrectionsPath, embeddedLicenseCorrectionsPath)
+	if err != nil {
+		return SBOM{}, Filters{}, nil, nil, nil, fmt.Errorf("failed to read license corrections: %w", err)
 	}
 
 	spdxNames, err := loadSpdxNameMap(ctx, cfg.SPDXVersion)
 	if err != nil {
-		return SBOM{}, Filters{}, nil, nil, fmt.Errorf("failed to load SPDX names: %w", err)
+		return SBOM{}, Filters{}, nil, nil, nil, fmt.Errorf("failed to load SPDX names: %w", err)
 	}
 
-	return sbom, filters, licenseMap, spdxNames, nil
+	return sbom, filters, licenseMap, licenseCorrections, spdxNames, nil
 }
 
 func shouldIgnoreComponent(c Component, filters Filters) bool {
@@ -102,17 +125,20 @@ func shouldIgnoreComponent(c Component, filters Filters) bool {
 		return true
 	}
 
-	for _, re := range filters.Suppliers {
-		if re.MatchString(c.Supplier.Name) {
-			return true
+	if c.Supplier != nil {
+		for _, re := range filters.Suppliers {
+			if re.MatchString(c.Supplier.Name) {
+				return true
+			}
 		}
 	}
 
 	return false
 }
 
-func buildModel(ctx context.Context, cfg Config, sbom SBOM, filters Filters, licenseMap map[string]string, spdxNames map[string]string) (Model, error) {
-	byLicense, byKey := buildIndex(sbom.Components, filters, licenseMap)
+func buildModel(ctx context.Context, cfg Config, sbom SBOM, filters Filters, licenseMap, licenseCorrections, spdxNames map[string]string) (Model, error) {
+	enricher := newCopyrightEnricher(cfg)
+	byLicense, byKey := buildIndex(sbom.Components, filters, licenseMap, licenseCorrections, enricher)
 
 	licenses, err := buildLicenseBlocks(ctx, cfg, byLicense, spdxNames)
 	if err != nil {
@@ -208,13 +234,16 @@ func buildLicenseBlocks(ctx context.Context, cfg Config, byLicense map[string][]
 	}
 
 	if len(unknowns) > 0 {
-		return nil, UnknownLicensesError{IDs: unknowns}
+		return nil, UnknownLicensesError{
+			IDs:              unknowns,
+			CustomLicenseDir: filepath.Join(cfg.OutLicensesDir, "custom"),
+		}
 	}
 
 	return licenses, nil
 }
 
-func buildIndex(components []Component, filters Filters, licenseMap map[string]string) (map[string][]OutComponent, map[string]OutComponent) {
+func buildIndex(components []Component, filters Filters, licenseMap, licenseCorrections map[string]string, enricher copyrightEnricher) (map[string][]OutComponent, map[string]OutComponent) {
 	byLicense := map[string][]OutComponent{}
 	byKey := map[string]OutComponent{}
 
@@ -225,31 +254,24 @@ func buildIndex(components []Component, filters Filters, licenseMap map[string]s
 
 		ids := normalizeLicenseIDs(c.Licenses, licenseMap)
 
+		// Apply license-corrections.json: entries take priority over whatever the SBOM
+		// reported, so they can both fill in absent licenses and correct wrong ones.
+		if c.PURL != "" {
+			if id := matchLicenseOverride(c.PURL, licenseCorrections); id != "" {
+				ids = []string{id}
+			}
+		}
+
 		out := OutComponent{
 			Name:       c.Name,
 			Version:    c.Version,
 			PURL:       c.PURL,
 			URL:        componentURLFromPurl(c.PURL),
 			LicenseIDs: ids,
-			Copyright:  c.Copyright,
+			Copyright:  enricher.enrich(c.PURL, c.Copyright),
 		}
 
-		key := c.PURL
-		if key == "" {
-			key = c.Name + "@" + c.Version
-		}
-
-		if existing, ok := byKey[key]; ok {
-			existing.LicenseIDs = uniqSorted(append(existing.LicenseIDs, out.LicenseIDs...))
-			if existing.Copyright == "" && out.Copyright != "" {
-				existing.Copyright = out.Copyright
-			}
-
-			byKey[key] = existing
-			out = existing
-		} else {
-			byKey[key] = out
-		}
+		out = mergeOrInsert(byKey, c, out)
 
 		for _, id := range ids {
 			byLicense[id] = append(byLicense[id], out)
@@ -257,4 +279,26 @@ func buildIndex(components []Component, filters Filters, licenseMap map[string]s
 	}
 
 	return byLicense, byKey
+}
+
+func mergeOrInsert(byKey map[string]OutComponent, c Component, out OutComponent) OutComponent {
+	key := c.PURL
+	if key == "" {
+		key = c.Name + "@" + c.Version
+	}
+
+	if existing, ok := byKey[key]; ok {
+		existing.LicenseIDs = uniqSorted(append(existing.LicenseIDs, out.LicenseIDs...))
+		if existing.Copyright == "" && out.Copyright != "" {
+			existing.Copyright = out.Copyright
+		}
+
+		byKey[key] = existing
+
+		return existing
+	}
+
+	byKey[key] = out
+
+	return out
 }
