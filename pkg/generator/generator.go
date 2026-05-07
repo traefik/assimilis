@@ -186,6 +186,10 @@ func buildNotices(byKey map[string]OutComponent) []OutComponent {
 		return notices[i].Name+notices[i].Version < notices[j].Name+notices[j].Version
 	})
 
+	sort.Slice(notices, func(i, j int) bool {
+		return sortComponents(notices[i], notices[j])
+	})
+
 	return notices
 }
 
@@ -205,6 +209,10 @@ func buildLicenseBlocks(ctx context.Context, cfg Config, byLicense map[string][]
 		comps := byLicense[id]
 		sort.Slice(comps, func(i, j int) bool {
 			return comps[i].Name+comps[i].Version < comps[j].Name+comps[j].Version
+		})
+
+		sort.Slice(comps, func(i, j int) bool {
+			return sortComponents(comps[i], comps[j])
 		})
 
 		name := spdxNames[id]
@@ -279,6 +287,26 @@ func buildIndex(components []Component, filters Filters, licenseMap, licenseCorr
 	}
 
 	return byLicense, byKey
+}
+
+func sortComponents(a, b OutComponent) bool {
+	if a.Name != b.Name {
+		return a.Name < b.Name
+	}
+
+	if a.Version != b.Version {
+		return a.Version < b.Version
+	}
+
+	if a.PURL != b.PURL {
+		return a.PURL < b.PURL
+	}
+
+	if a.URL != b.URL {
+		return a.URL < b.URL
+	}
+
+	return a.Copyright < b.Copyright
 }
 
 func mergeOrInsert(byKey map[string]OutComponent, c Component, out OutComponent) OutComponent {
