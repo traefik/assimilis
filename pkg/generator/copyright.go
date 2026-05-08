@@ -136,14 +136,23 @@ func extractNpmCopyright(nodeModulesDir, purl string) string {
 
 	pkgDir := filepath.Join(nodeModulesDir, filepath.FromSlash(name))
 
+	fileNames := []string{
+		"LICENSE",
+		"LICENSE.md",
+		"LICENSE.txt",
+		"LICENCE",
+		"LICENCE.md",
+	}
+
 	//nolint:misspell // support British spelling
-	for _, filename := range []string{"LICENSE", "LICENSE.md", "LICENSE.txt", "LICENCE", "LICENCE.md"} {
-		if c := firstCopyrightLine(readFileText(filepath.Join(pkgDir, filename))); c != "" {
+	if filename := findCaseInsensitiveFile(pkgDir, fileNames); filename != "" {
+		if c := firstCopyrightLine(readFileText(filename)); c != "" {
 			return c
 		}
 	}
 
 	return npmAuthorCopyright(filepath.Join(pkgDir, "package.json"))
+
 }
 
 func parseNpmPURL(purl string) (string, string) {
@@ -299,4 +308,25 @@ func readFileText(path string) string {
 	}
 
 	return string(data)
+}
+
+func findCaseInsensitiveFile(dir string, names []string) string {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return ""
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+
+		for _, name := range names {
+			if strings.EqualFold(entry.Name(), name) {
+				return filepath.Join(dir, entry.Name())
+			}
+		}
+	}
+
+	return ""
 }
