@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/aquasecurity/trivy/pkg/licensing/expression"
@@ -46,6 +47,9 @@ func resolveExpression(item LicenseChoice, licenseMap map[string]string) []strin
 	// remaining human name can be resolved through licenseMap or SPDX instead of
 	// degenerating into an opaque LicenseRef-License-OSI-Approved-* identifier.
 	expr = stripTrovePrefix(expr)
+	if expr == "" {
+		return nil
+	}
 
 	if mapped, ok := licenseMap[expr]; ok && mapped != "" {
 		return []string{mapped}
@@ -159,7 +163,20 @@ func firstNonEmpty(a string, b func() string) string {
 // (https://pypi.org/classifiers/) from s, returning the trailing
 // human-readable license name (e.g. "Apache Software License"). It is a no-op
 // when no known prefix is present.
+//
+// "Bare" meta-classifiers such as "License :: OSI Approved" (without a
+// specific license after) carry no attribution value on their own and are
+// reduced to the empty string so the caller can skip them.
 func stripTrovePrefix(s string) string {
+	bareMetaClassifiers := []string{
+		"License :: OSI Approved",
+		"License :: DFSG approved",
+	}
+
+	if slices.Contains(bareMetaClassifiers, s) {
+		return ""
+	}
+
 	prefixes := []string{
 		"License :: OSI Approved :: ",
 		"License :: DFSG approved :: ",

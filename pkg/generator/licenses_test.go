@@ -108,6 +108,24 @@ func TestNormalizeLicenseIDs_TroveClassifierFromLicenseName(t *testing.T) {
 	assert.Equal(t, []string{"BSD-2-Clause"}, ids)
 }
 
+func TestNormalizeLicenseIDs_BareOSIApprovedAlongsideSPDX(t *testing.T) {
+	t.Parallel()
+
+	licenses := []LicenseChoice{
+		{License: &struct {
+			ID   string `json:"id"`
+			Name string `json:"name"`
+		}{ID: "MIT"}},
+		{License: &struct {
+			ID   string `json:"id"`
+			Name string `json:"name"`
+		}{Name: "License :: OSI Approved"}},
+	}
+
+	ids := normalizeLicenseIDs(licenses, nil)
+	assert.Equal(t, []string{"MIT"}, ids)
+}
+
 func TestStripTrovePrefix(t *testing.T) {
 	t.Parallel()
 
@@ -119,6 +137,8 @@ func TestStripTrovePrefix(t *testing.T) {
 		{"License :: OSI Approved :: BSD License", "BSD License"},
 		{"License :: DFSG approved :: GNU General Public License (GPL)", "GNU General Public License (GPL)"},
 		{"License :: Public Domain", "Public Domain"},
+		{"License :: OSI Approved", ""},
+		{"License :: DFSG approved", ""},
 		{"MIT", "MIT"},
 		{"", ""},
 	}
