@@ -137,8 +137,10 @@ func extractNpmCopyright(nodeModulesDir, purl string) string {
 	pkgDir := filepath.Join(nodeModulesDir, filepath.FromSlash(name))
 
 	//nolint:misspell // support British spelling
-	for _, filename := range []string{"LICENSE", "LICENSE.md", "LICENSE.txt", "LICENCE", "LICENCE.md"} {
-		if c := firstCopyrightLine(readFileText(filepath.Join(pkgDir, filename))); c != "" {
+	licenseFileNames := []string{"LICENSE", "LICENSE.md", "LICENSE.txt", "LICENCE", "LICENCE.md"}
+
+	if filename := findCaseInsensitiveFile(pkgDir, licenseFileNames); filename != "" {
+		if c := firstCopyrightLine(readFileText(filename)); c != "" {
 			return c
 		}
 	}
@@ -299,4 +301,28 @@ func readFileText(path string) string {
 	}
 
 	return string(data)
+}
+
+// findCaseInsensitiveFile returns the path of the first file in dir whose name
+// matches one of names case-insensitively. Preference follows the order of
+// names: "LICENSE" beats "LICENSE.md" even if the latter appears first in dir.
+func findCaseInsensitiveFile(dir string, names []string) string {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return ""
+	}
+
+	for _, name := range names {
+		for _, entry := range entries {
+			if entry.IsDir() {
+				continue
+			}
+
+			if strings.EqualFold(entry.Name(), name) {
+				return filepath.Join(dir, entry.Name())
+			}
+		}
+	}
+
+	return ""
 }

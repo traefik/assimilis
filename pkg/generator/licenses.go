@@ -41,6 +41,12 @@ func resolveExpression(item LicenseChoice, licenseMap map[string]string) []strin
 		return nil
 	}
 
+	// cyclonedx-py emits PyPI Trove classifiers (e.g. "License :: OSI Approved ::
+	// Apache Software License") verbatim. Strip the classifier prefix so the
+	// remaining human name can be resolved through licenseMap or SPDX instead of
+	// degenerating into an opaque LicenseRef-License-OSI-Approved-* identifier.
+	expr = stripTrovePrefix(expr)
+
 	if mapped, ok := licenseMap[expr]; ok && mapped != "" {
 		return []string{mapped}
 	}
@@ -147,4 +153,24 @@ func firstNonEmpty(a string, b func() string) string {
 	}
 
 	return b()
+}
+
+// stripTrovePrefix removes a PyPI Trove classifier prefix
+// (https://pypi.org/classifiers/) from s, returning the trailing
+// human-readable license name (e.g. "Apache Software License"). It is a no-op
+// when no known prefix is present.
+func stripTrovePrefix(s string) string {
+	prefixes := []string{
+		"License :: OSI Approved :: ",
+		"License :: DFSG approved :: ",
+		"License :: ",
+	}
+
+	for _, prefix := range prefixes {
+		if rest, ok := strings.CutPrefix(s, prefix); ok {
+			return strings.TrimSpace(rest)
+		}
+	}
+
+	return s
 }

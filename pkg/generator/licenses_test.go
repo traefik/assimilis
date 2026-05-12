@@ -85,6 +85,49 @@ func TestNormalizeLicenseIDs_LicenseRefIDWithoutMapping(t *testing.T) {
 	assert.Equal(t, []string{"LicenseRef-Unknown"}, ids)
 }
 
+func TestNormalizeLicenseIDs_TroveClassifierOSIApproved(t *testing.T) {
+	t.Parallel()
+
+	licenses := []LicenseChoice{{Expression: "License :: OSI Approved :: Apache Software License"}}
+	licenseMap := map[string]string{"Apache Software License": "Apache-2.0"}
+
+	ids := normalizeLicenseIDs(licenses, licenseMap)
+	assert.Equal(t, []string{"Apache-2.0"}, ids)
+}
+
+func TestNormalizeLicenseIDs_TroveClassifierFromLicenseName(t *testing.T) {
+	t.Parallel()
+
+	licenses := []LicenseChoice{{License: &struct {
+		ID   string `json:"id"`
+		Name string `json:"name"`
+	}{Name: "License :: OSI Approved :: BSD License"}}}
+	licenseMap := map[string]string{"BSD License": "BSD-2-Clause"}
+
+	ids := normalizeLicenseIDs(licenses, licenseMap)
+	assert.Equal(t, []string{"BSD-2-Clause"}, ids)
+}
+
+func TestStripTrovePrefix(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		in   string
+		want string
+	}{
+		{"License :: OSI Approved :: Apache Software License", "Apache Software License"},
+		{"License :: OSI Approved :: BSD License", "BSD License"},
+		{"License :: DFSG approved :: GNU General Public License (GPL)", "GNU General Public License (GPL)"},
+		{"License :: Public Domain", "Public Domain"},
+		{"MIT", "MIT"},
+		{"", ""},
+	}
+
+	for _, tc := range testCases {
+		assert.Equal(t, tc.want, stripTrovePrefix(tc.in))
+	}
+}
+
 func TestMatchLicenseOverride_ExactPURL(t *testing.T) {
 	t.Parallel()
 

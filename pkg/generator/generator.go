@@ -183,7 +183,7 @@ func buildNotices(byKey map[string]OutComponent) []OutComponent {
 	}
 
 	sort.Slice(notices, func(i, j int) bool {
-		return notices[i].Name+notices[i].Version < notices[j].Name+notices[j].Version
+		return sortComponents(notices[i], notices[j])
 	})
 
 	return notices
@@ -204,7 +204,7 @@ func buildLicenseBlocks(ctx context.Context, cfg Config, byLicense map[string][]
 	for _, id := range licenseIDs {
 		comps := byLicense[id]
 		sort.Slice(comps, func(i, j int) bool {
-			return comps[i].Name+comps[i].Version < comps[j].Name+comps[j].Version
+			return sortComponents(comps[i], comps[j])
 		})
 
 		name := spdxNames[id]
@@ -279,6 +279,30 @@ func buildIndex(components []Component, filters Filters, licenseMap, licenseCorr
 	}
 
 	return byLicense, byKey
+}
+
+// sortComponents orders components by name, version, PURL, URL, copyright in
+// turn. Concatenating these into one string would conflate boundaries — e.g.
+// ("ab", "") and ("a", "b") would compare equal — so the comparison cascades
+// field by field.
+func sortComponents(a, b OutComponent) bool {
+	if a.Name != b.Name {
+		return a.Name < b.Name
+	}
+
+	if a.Version != b.Version {
+		return a.Version < b.Version
+	}
+
+	if a.PURL != b.PURL {
+		return a.PURL < b.PURL
+	}
+
+	if a.URL != b.URL {
+		return a.URL < b.URL
+	}
+
+	return a.Copyright < b.Copyright
 }
 
 func mergeOrInsert(byKey map[string]OutComponent, c Component, out OutComponent) OutComponent {
