@@ -10,8 +10,8 @@ import (
 	"strings"
 
 	"github.com/rs/zerolog/log"
-	"github.com/traefik/assimilis/pkg/generator"
-	"github.com/traefik/assimilis/pkg/logger"
+	"github.com/traefik/assimilis/v2/pkg/generator"
+	"github.com/traefik/assimilis/v2/pkg/logger"
 	"github.com/urfave/cli/v3"
 )
 
