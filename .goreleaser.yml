@@ -10,9 +10,9 @@ builds:
       - -trimpath
     ldflags:
       - -s -w
-      - -X github.com/traefik/assimilis/pkg/version.Version={{ .Version }}
-      - -X github.com/traefik/assimilis/pkg/version.Commit={{ .Commit }}
-      - -X github.com/traefik/assimilis/pkg/version.Date={{ .Date }}
+      - -X github.com/traefik/assimilis/v2/pkg/version.Version={{ .Version }}
+      - -X github.com/traefik/assimilis/v2/pkg/version.Commit={{ .Commit }}
+      - -X github.com/traefik/assimilis/v2/pkg/version.Date={{ .Date }}
 
     goos:
       - windows

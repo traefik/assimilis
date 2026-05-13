@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/traefik/assimilis/pkg/generator"
+	"github.com/traefik/assimilis/v2/pkg/generator"
 )
 
 func TestValidate_Fail(t *testing.T) {

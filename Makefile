@@ -2,7 +2,7 @@
 
 export GO111MODULE=on
 
-LDFLAGS_PREFIX := github.com/traefik/assimilis/pkg/version
+LDFLAGS_PREFIX := github.com/traefik/assimilis/v2/pkg/version
 
 TAG_NAME := $(shell git tag -l --contains HEAD)
 SHA := $(shell git rev-parse --short HEAD)
