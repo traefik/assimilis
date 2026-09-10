@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os/exec"
@@ -317,14 +318,29 @@ func runGit(ctx context.Context, dir string, args ...string) (string, error) {
 
 	cmd := exec.CommandContext(ctx, "git", args...)
 
-	output, err := cmd.CombinedOutput()
+	// Kept apart from stdout: git warns on stderr while exiting 0.
+	// Callers parse stdout as a sha, a path or a blob.
+	var stderr bytes.Buffer
+
+	cmd.Stderr = &stderr
+
+	output, err := cmd.Output()
+
+	details := strings.TrimSpace(stderr.String())
+
 	if err != nil {
-		details := strings.TrimSpace(string(output))
 		if details != "" {
 			return "", fmt.Errorf("%w: %s", err, details)
 		}
 
 		return "", err
+	}
+
+	if details != "" {
+		log.Warn().
+			Strs("args", args).
+			Str("stderr", details).
+			Msg("Git reported a warning")
 	}
 
 	return strings.TrimSpace(string(output)), nil
