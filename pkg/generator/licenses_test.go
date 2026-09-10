@@ -232,6 +232,19 @@ func TestNormalizeLicenseIDs_CompoundExpressionWithoutParentheses(t *testing.T) 
 	assert.Equal(t, []string{"Apache-2.0", "BSD-3-Clause"}, ids)
 }
 
+func TestNormalizeLicenseIDs_CompoundExpressionUsesLicenseMap(t *testing.T) {
+	t.Parallel()
+
+	licenses := []LicenseChoice{{Expression: "Apache License 2.0 AND MIT License"}}
+	licenseMap := map[string]string{
+		"Apache License 2.0": "Apache-2.0",
+		"MIT License":        "MIT",
+	}
+
+	ids := normalizeLicenseIDs(licenses, licenseMap)
+	assert.Equal(t, []string{"Apache-2.0", "MIT"}, ids)
+}
+
 func TestNormalizeLicenseIDs_CompoundExpressionWithLicenseRef(t *testing.T) {
 	t.Parallel()
 

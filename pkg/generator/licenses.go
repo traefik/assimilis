@@ -88,7 +88,7 @@ func collectSimpleLicenses(e expression.Expression) []string {
 // licenseMap override, canonical SPDX ID, or a LicenseRef- fallback (which can
 // itself be remapped by licenseMap).
 func resolveSingleLicense(lic string, licenseMap map[string]string) string {
-	if mapped, ok := licenseMap[lic]; ok && mapped != "" {
+	if mapped := mappedLicenseID(lic, licenseMap); mapped != "" {
 		return mapped
 	}
 
@@ -118,6 +118,19 @@ func resolveSingleLicense(lic string, licenseMap map[string]string) string {
 	}
 
 	return licRef
+}
+
+func mappedLicenseID(lic string, licenseMap map[string]string) string {
+	if mapped, ok := licenseMap[lic]; ok && mapped != "" {
+		return mapped
+	}
+
+	// NormalizeForSPDX expressions for cases like Apache License 2.0" into "Apache-License-2.0"
+	if mapped, ok := licenseMap[strings.ReplaceAll(lic, "-", " ")]; ok && mapped != "" {
+		return mapped
+	}
+
+	return ""
 }
 
 // canonicalSPDXException resolves a bare exception token to its SPDX-cased ID,
