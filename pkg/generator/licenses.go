@@ -125,9 +125,7 @@ func mappedLicenseID(lic string, licenseMap map[string]string) string {
 		return mapped
 	}
 
-	// NormalizeForSPDX expressions such as Apache License 2.0"
-	// into "Apache-License-2.0" before this lookup.
-	// Try the corresponding map key form as well.
+	// NormalizeForSPDX expressions for cases like Apache License 2.0" into "Apache-License-2.0" 
 	if mapped, ok := licenseMap[strings.ReplaceAll(lic, "-", " ")]; ok && mapped != "" {
 		return mapped
 	}
