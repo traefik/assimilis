@@ -100,6 +100,44 @@ func TestBuildIndex_OverrideReplacesExistingLicense(t *testing.T) {
 	require.Empty(t, missing)
 }
 
+func TestBuildIndex_CompoundLicenseOverride(t *testing.T) {
+	t.Parallel()
+
+	components := []Component{
+		{
+			Name:    "foo",
+			Version: "1.0.0",
+			PURL:    "pkg:npm/foo@1.0.0",
+			Licenses: []LicenseChoice{
+				{License: &struct {
+					ID   string `json:"id"`
+					Name string `json:"name"`
+				}{ID: "MIT"}},
+			},
+		},
+	}
+	overrides := map[string]string{
+		"pkg:npm/foo": "Apache-2.0 AND CC-BY-SA-4.0",
+	}
+
+	byLicense, byKey, missing := buildIndex(
+		components,
+		Filters{},
+		nil,
+		overrides,
+		copyrightEnricher{},
+	)
+
+	require.Contains(t, byLicense, "Apache-2.0")
+	require.Contains(t, byLicense, "CC-BY-SA-4.0")
+	require.Equal(
+		t,
+		[]string{"Apache-2.0", "CC-BY-SA-4.0"},
+		byKey["pkg:npm/foo@1.0.0"].LicenseIDs,
+	)
+	require.Empty(t, missing)
+}
+
 func TestBuildIndex_MergesDuplicateComponents(t *testing.T) {
 	t.Parallel()
 
