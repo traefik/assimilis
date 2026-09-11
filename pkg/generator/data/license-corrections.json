@@ -11,7 +11,7 @@
     "pkg:golang/golang.org/x/text": "BSD-3-Clause",
     "pkg:golang/golang.org/x/time": "BSD-3-Clause",
     "pkg:golang/golang.org/x/tools": "BSD-3-Clause",
-    "pkg:golang/github.com/opencontainers/go-digest": "Apache-2.0",
+    "pkg:golang/github.com/opencontainers/go-digest": "Apache-2.0 AND CC-BY-SA-4.0",
     "pkg:golang/github.com/ghodss/yaml": "MIT",
     "pkg:golang/github.com/go-acme/tencentclouddnspod": "Apache-2.0",
     "pkg:golang/github.com/nrdcg/oci-go-sdk": "MIT",
