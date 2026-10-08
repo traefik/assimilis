@@ -283,8 +283,8 @@ func buildIndex(components []Component, filters Filters, licenseMap, licenseCorr
 		// Apply license-corrections.json: entries take priority over whatever the SBOM
 		// reported, so they can both fill in absent licenses and correct wrong ones.
 		if c.PURL != "" {
-			if id := matchLicenseOverride(c.PURL, licenseCorrections); id != "" {
-				ids = []string{id}
+			if correction := matchLicenseOverride(c.PURL, licenseCorrections); correction != "" {
+				ids = normalizeLicenseIDs([]LicenseChoice{{Expression: correction}}, licenseMap)
 			}
 		}
 
