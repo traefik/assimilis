@@ -121,13 +121,27 @@ func resolveSingleLicense(lic string, licenseMap map[string]string) string {
 }
 
 func mappedLicenseID(lic string, licenseMap map[string]string) string {
-	if mapped, ok := licenseMap[lic]; ok && mapped != "" {
+	if mapped := lookupLicenseMap(lic, licenseMap); mapped != "" {
 		return mapped
 	}
 
 	// NormalizeForSPDX expressions for cases like Apache License 2.0" into "Apache-License-2.0"
-	if mapped, ok := licenseMap[strings.ReplaceAll(lic, "-", " ")]; ok && mapped != "" {
+	if mapped := lookupLicenseMap(strings.ReplaceAll(lic, "-", " "), licenseMap); mapped != "" {
 		return mapped
+	}
+
+	return ""
+}
+
+func lookupLicenseMap(license string, licenseMap map[string]string) string {
+	if mapped, ok := licenseMap[license]; ok && mapped != "" {
+		return mapped
+	}
+
+	for key, mapped := range licenseMap {
+		if strings.EqualFold(key, license) && mapped != "" {
+			return mapped
+		}
 	}
 
 	return ""

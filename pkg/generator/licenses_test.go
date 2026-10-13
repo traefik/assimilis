@@ -38,6 +38,16 @@ func TestNormalizeLicenseIDs_UseLicenseMap(t *testing.T) {
 	assert.Equal(t, []string{"PSF-2.0"}, ids)
 }
 
+func TestNormalizeLicenseIDs_UseLicenseMapCaseInsensitive(t *testing.T) {
+	t.Parallel()
+
+	licenses := []LicenseChoice{{Expression: "BSD license"}}
+	licenseMap := map[string]string{"BSD License": "BSD-2-Clause"}
+
+	ids := normalizeLicenseIDs(licenses, licenseMap)
+	assert.Equal(t, []string{"BSD-2-Clause"}, ids)
+}
+
 func TestNormalizeLicenseIDs_SPDXKnown(t *testing.T) {
 	t.Parallel()
 
