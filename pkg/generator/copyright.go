@@ -62,6 +62,11 @@ func goModCache() string {
 // extractGoCopyrightFromCache looks up the LICENSE file in the Go module cache
 // for the given PURL and returns the first copyright line found.
 func extractGoCopyrightFromCache(gomodcache, purl string) string {
+	// The PURL subpath comes after the qualifiers, so it is cut first.
+	// Some SBOM generators (e.g. Aikido) put the module path suffix there:
+	// "pkg:golang/github.com/vulcand/oxy@v2.0.3#v2" is the module "github.com/vulcand/oxy/v2".
+	purl, subpath, _ := strings.Cut(purl, "#")
+
 	if idx := strings.Index(purl, "?"); idx != -1 {
 		purl = purl[:idx]
 	}
@@ -79,6 +84,10 @@ func extractGoCopyrightFromCache(gomodcache, purl string) string {
 	// PURL components are percent-encoded (syft emits "+incompatible" as
 	// "%2Bincompatible"); decode before mapping them onto the cache layout.
 	modulePath, version := pathUnescape(rest[:idx]), pathUnescape(rest[idx+1:])
+	if subpath = strings.Trim(pathUnescape(subpath), "/"); subpath != "" {
+		modulePath += "/" + subpath
+	}
+
 	if !safeRelPath(modulePath) || !safeRelPath(version) {
 		return ""
 	}
