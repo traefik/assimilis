@@ -14,6 +14,8 @@ import (
 )
 
 func TestFetchCommandModes(t *testing.T) {
+	const exportError = "failed to download SBOM: aikido returned HTTP 404: export unavailable"
+
 	testCases := []struct {
 		name           string
 		args           []string
@@ -38,6 +40,12 @@ func TestFetchCommandModes(t *testing.T) {
 			lookups:        1,
 		},
 		{
+			name:           "lookup trims repository name and branch",
+			args:           []string{"--type", "repo-code", "--aikido-repo-name", " " + testRepoName + " ", "--branch", " v2.11 "},
+			expectedOutput: "7\n",
+			lookups:        1,
+		},
+		{
 			name:           "repo code override without credentials",
 			args:           []string{"--type", "repo-code", "--repo-code", "99"},
 			expectedOutput: "99\n",
@@ -46,7 +54,7 @@ func TestFetchCommandModes(t *testing.T) {
 		{
 			name:          "default SBOM with automatic lookup",
 			args:          []string{"--repo-name", testRepoName, "--branch", "v2.11"},
-			expectedError: "HTTP 404",
+			expectedError: exportError,
 			lookups:       1,
 			exportCode:    "7",
 			exports:       1,
@@ -55,7 +63,7 @@ func TestFetchCommandModes(t *testing.T) {
 			name:          "Aikido name overrides filename and environment",
 			args:          []string{"--repo-name", "output-name", "--aikido-repo-name", testRepoName, "--branch", "v2.11"},
 			env:           map[string]string{"AIKIDO_REPO_NAME": "other-name"},
-			expectedError: "HTTP 404",
+			expectedError: exportError,
 			lookups:       1,
 			exportCode:    "7",
 			exports:       1,
@@ -64,7 +72,7 @@ func TestFetchCommandModes(t *testing.T) {
 			name:          "explicit code overrides lookup and environment",
 			args:          []string{"--repo-name", testRepoName, "--type", "sbom", "--repo-code", "99", "--aikido-repo-name", "other-name"},
 			env:           map[string]string{"AIKIDO_REPO_CODE": "88", "AIKIDO_BRANCH": "v2.11"},
-			expectedError: "HTTP 404",
+			expectedError: exportError,
 			exportCode:    "99",
 			exports:       1,
 		},
@@ -72,11 +80,11 @@ func TestFetchCommandModes(t *testing.T) {
 			name:          "legacy code from environment",
 			args:          []string{"--repo-name", testRepoName},
 			env:           map[string]string{"AIKIDO_REPO_CODE": "88"},
-			expectedError: "HTTP 404",
+			expectedError: exportError,
 			exportCode:    "88",
 			exports:       1,
 		},
-		{name: "invalid type", args: []string{"--type", "invalid"}, expectedError: "unsupported fetch type"},
+		{name: "invalid type", args: []string{"--type", "invalid"}, expectedError: `unsupported fetch type "invalid": expected sbom or repo-code`},
 		{name: "missing repository name", args: []string{"--type", "repo-code"}, expectedError: "repository name cannot be empty"},
 		{name: "missing branch", args: []string{"--type", "repo-code", "--repo-name", testRepoName}, expectedError: "branch cannot be empty"},
 		{name: "missing SBOM repo name", args: []string{"--repo-code", "99"}, expectedError: "--repo-name cannot be empty"},
@@ -148,7 +156,7 @@ func TestFetchCommandModes(t *testing.T) {
 
 			err := command.Run(t.Context(), args)
 			if testCase.expectedError != "" {
-				require.ErrorContains(t, err, testCase.expectedError)
+				require.EqualError(t, err, testCase.expectedError)
 			} else {
 				require.NoError(t, err)
 			}

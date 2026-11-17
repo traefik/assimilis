@@ -42,12 +42,7 @@ func (c *Client) DownloadSBOM(ctx context.Context, repoCode string) ([]byte, err
 		url.PathEscape(repoCode),
 	)
 
-	sbom, err := c.get(ctx, token, endpoint)
-	if err != nil {
-		return nil, fmt.Errorf("failed to download SBOM: %w", err)
-	}
-
-	return sbom, nil
+	return c.get(ctx, token, endpoint)
 }
 
 func (c *Client) get(ctx context.Context, token, endpoint string) ([]byte, error) {

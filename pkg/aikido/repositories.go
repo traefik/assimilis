@@ -9,7 +9,10 @@ import (
 	"strings"
 )
 
-const repositoriesPerPage = 200
+const (
+	repositoriesPerPage = 200
+	maxRepositoryPages  = 100
+)
 
 type repository struct {
 	ID     int64  `json:"id"`
@@ -19,11 +22,14 @@ type repository struct {
 
 // FetchRepoCode returns the Aikido code for a repository name and branch.
 func (c *Client) FetchRepoCode(ctx context.Context, name, branch string) (string, error) {
-	if strings.TrimSpace(name) == "" {
+	name = strings.TrimSpace(name)
+	branch = strings.TrimSpace(branch)
+
+	if name == "" {
 		return "", fmt.Errorf("repository name cannot be empty")
 	}
 
-	if strings.TrimSpace(branch) == "" {
+	if branch == "" {
 		return "", fmt.Errorf("branch cannot be empty")
 	}
 
@@ -39,13 +45,17 @@ func (c *Client) findRepositoryCode(ctx context.Context, token, name, branch str
 	var repoCode string
 
 	for page := 0; ; page++ {
+		if page >= maxRepositoryPages {
+			return "", fmt.Errorf("aikido repository lookup exceeded %d pages", maxRepositoryPages)
+		}
+
 		repositories, err := c.listRepositories(ctx, token, name, branch, page)
 		if err != nil {
 			return "", err
 		}
 
 		for _, repo := range repositories {
-			if repo.Name != name || repo.Branch != branch {
+			if !strings.EqualFold(repo.Name, name) || repo.Branch != branch {
 				continue
 			}
 

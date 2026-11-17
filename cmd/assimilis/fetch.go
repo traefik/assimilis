@@ -91,13 +91,19 @@ func runFetchCommand(ctx context.Context, cfg generator.Config, fetchCfg fetchCo
 		return err
 	}
 
+	if strings.TrimSpace(fetchCfg.repoCode) != "" && fetchCfg.fetchType == fetchTypeRepoCode {
+		_, err := fmt.Fprintln(output, fetchCfg.repoCode)
+
+		return err
+	}
+
 	client := aikido.NewClient(fetchCfg.baseURL, fetchCfg.clientID, fetchCfg.clientSecret, &http.Client{
 		Timeout: 2 * time.Minute,
 	})
 
 	if strings.TrimSpace(fetchCfg.repoCode) == "" {
 		repoName := fetchCfg.repoName
-		if strings.TrimSpace(repoName) == "" {
+		if repoName == "" {
 			repoName = cfg.RepoName
 		}
 
