@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -17,11 +18,19 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
+const (
+	fetchTypeSBOM     = "sbom"
+	fetchTypeRepoCode = "repo-code"
+)
+
 type fetchConfig struct {
 	baseURL      string
 	clientID     string
 	clientSecret string
 	repoCode     string
+	fetchType    string
+	repoName     string
+	branch       string
 }
 
 type sbomDownloader interface {
@@ -29,17 +38,36 @@ type sbomDownloader interface {
 }
 
 func buildFetchCommand(cfg *generator.Config) *cli.Command {
-	fetchCfg := fetchConfig{baseURL: "https://app.aikido.dev"}
+	fetchCfg := fetchConfig{baseURL: "https://app.aikido.dev", fetchType: fetchTypeSBOM}
 
 	return &cli.Command{
 		Name:  "fetch",
-		Usage: "Download an SBOM from Aikido and generate attribution files",
+		Usage: "Fetch an SBOM and generate attribution files, or retrieve an Aikido repository code",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
+				Name:        "type",
+				Usage:       "What to fetch: sbom or repo-code",
+				Value:       fetchCfg.fetchType,
+				Sources:     cli.EnvVars("AIKIDO_FETCH_TYPE"),
+				Destination: &fetchCfg.fetchType,
+			},
+			&cli.StringFlag{
 				Name:        "repo-code",
-				Usage:       "Aikido repository code",
+				Usage:       "Aikido repository code (overrides automatic lookup)",
 				Sources:     cli.EnvVars("AIKIDO_REPO_CODE"),
 				Destination: &fetchCfg.repoCode,
+			},
+			&cli.StringFlag{
+				Name:        "aikido-repo-name",
+				Usage:       "Repository name in Aikido (defaults to --repo-name)",
+				Sources:     cli.EnvVars("AIKIDO_REPO_NAME"),
+				Destination: &fetchCfg.repoName,
+			},
+			&cli.StringFlag{
+				Name:        "branch",
+				Usage:       "Branch scanned by Aikido",
+				Sources:     cli.EnvVars("AIKIDO_BRANCH"),
+				Destination: &fetchCfg.branch,
 			},
 			&cli.StringFlag{
 				Name:        "aikido-base-url",
@@ -49,32 +77,62 @@ func buildFetchCommand(cfg *generator.Config) *cli.Command {
 				Destination: &fetchCfg.baseURL,
 			},
 		},
-		Action: func(ctx context.Context, _ *cli.Command) error {
+		Action: func(ctx context.Context, command *cli.Command) error {
 			fetchCfg.clientID = os.Getenv("AIK_CLIENT")
 			fetchCfg.clientSecret = os.Getenv("AIK_SECRET")
 
-			if err := validateFetch(*cfg, fetchCfg); err != nil {
-				return err
-			}
-
-			logger.Setup("info")
-
-			client := aikido.NewClient(fetchCfg.baseURL, fetchCfg.clientID, fetchCfg.clientSecret, &http.Client{
-				Timeout: 2 * time.Minute,
-			})
-
-			return fetch(ctx, *cfg, fetchCfg.repoCode, client, generator.Run, time.Now)
+			return runFetchCommand(ctx, *cfg, fetchCfg, command.Root().Writer)
 		},
 	}
 }
 
-func validateFetch(cfg generator.Config, fetchCfg fetchConfig) error {
-	if err := validate(cfg); err != nil {
+func runFetchCommand(ctx context.Context, cfg generator.Config, fetchCfg fetchConfig, output io.Writer) error {
+	if err := validateFetch(cfg, fetchCfg); err != nil {
 		return err
 	}
 
+	client := aikido.NewClient(fetchCfg.baseURL, fetchCfg.clientID, fetchCfg.clientSecret, &http.Client{
+		Timeout: 2 * time.Minute,
+	})
+
 	if strings.TrimSpace(fetchCfg.repoCode) == "" {
-		return fmt.Errorf("--repo-code or AIKIDO_REPO_CODE cannot be empty")
+		repoName := fetchCfg.repoName
+		if strings.TrimSpace(repoName) == "" {
+			repoName = cfg.RepoName
+		}
+
+		repoCode, err := client.FetchRepoCode(ctx, repoName, fetchCfg.branch)
+		if err != nil {
+			return err
+		}
+
+		fetchCfg.repoCode = repoCode
+	}
+
+	if fetchCfg.fetchType == fetchTypeRepoCode {
+		_, err := fmt.Fprintln(output, fetchCfg.repoCode)
+
+		return err
+	}
+
+	logger.Setup("info")
+
+	return fetch(ctx, cfg, fetchCfg.repoCode, client, generator.Run, time.Now)
+}
+
+func validateFetch(cfg generator.Config, fetchCfg fetchConfig) error {
+	switch fetchCfg.fetchType {
+	case fetchTypeSBOM:
+		if err := validate(cfg); err != nil {
+			return err
+		}
+	case fetchTypeRepoCode:
+	default:
+		return fmt.Errorf("unsupported fetch type %q: expected sbom or repo-code", fetchCfg.fetchType)
+	}
+
+	if strings.TrimSpace(fetchCfg.repoCode) != "" && fetchCfg.fetchType == fetchTypeRepoCode {
+		return nil
 	}
 
 	if strings.TrimSpace(fetchCfg.clientID) == "" {

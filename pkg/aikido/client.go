@@ -42,9 +42,18 @@ func (c *Client) DownloadSBOM(ctx context.Context, repoCode string) ([]byte, err
 		url.PathEscape(repoCode),
 	)
 
+	sbom, err := c.get(ctx, token, endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("failed to download SBOM: %w", err)
+	}
+
+	return sbom, nil
+}
+
+func (c *Client) get(ctx context.Context, token, endpoint string) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+endpoint, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create SBOM request: %w", err)
+		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	req.Header.Set("Accept", "application/json")
@@ -52,21 +61,21 @@ func (c *Client) DownloadSBOM(ctx context.Context, repoCode string) ([]byte, err
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to download SBOM: %w", err)
+		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
 
 	defer func() { _ = resp.Body.Close() }()
 
 	if responseErr := checkResponse(resp); responseErr != nil {
-		return nil, fmt.Errorf("failed to download SBOM: %w", responseErr)
+		return nil, responseErr
 	}
 
-	sbom, err := io.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read SBOM response: %w", err)
+		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
 
-	return sbom, nil
+	return data, nil
 }
 
 func (c *Client) getToken(ctx context.Context) (string, error) {
