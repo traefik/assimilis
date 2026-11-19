@@ -30,9 +30,9 @@ By default, it writes:
     assimilis --repo-name <REPO_NAME>
     ```
 
-### Fetching an SBOM from Aikido
+### Fetching from Aikido
 
-Assimilis can fetch the CycloneDX SBOM from Aikido before generating the attribution files. The Aikido client credentials are read only from the environment:
+The `fetch` command supports two types: `sbom` (the default) and `repo-code`. The Aikido client credentials are read only from the environment:
 
 ```bash
 export AIK_CLIENT=<CLIENT_ID>
@@ -40,12 +40,37 @@ export AIK_SECRET=<CLIENT_SECRET>
 
 assimilis fetch \
   --repo-name <REPO_NAME> \
-  --repo-code <AIKIDO_REPOSITORY_CODE>
+  --branch <BRANCH>
 ```
 
-`--repo-code` can also be set through `AIKIDO_REPO_CODE`. `AIKIDO_BASE_URL` optionally overrides the default `https://app.aikido.dev` API URL.
-
 The command writes the SBOM to `third_party/sbom/<REPO_NAME>.cdx.json`, generates the normal attribution files, and updates `third_party/.last_generated_at` only after generation succeeds.
+
+To fetch only the repository code, use `--type repo-code`:
+
+```bash
+repo_code=$(assimilis fetch --type repo-code --repo-name traefik --branch v2.11)
+assimilis fetch --repo-name traefik --repo-code "$repo_code"
+```
+
+The `repo-code` type writes only the code and a newline to stdout. `--repo-code` or `AIKIDO_REPO_CODE` overrides automatic lookup for either type; an explicit flag takes precedence over the environment variable. When requesting only an explicitly supplied code, no Aikido credentials are needed.
+
+By default, the lookup name is `--repo-name`. If the repository's name in Aikido differs from the output filename, set `--aikido-repo-name` or `AIKIDO_REPO_NAME`:
+
+```bash
+assimilis fetch --repo-name traefik --aikido-repo-name '<NAME_IN_AIKIDO>' --branch v2.11
+```
+
+Lookup trims the name and branch, compares repository names without regard to case, and matches branch names exactly. It checks all result pages, up to 100 pages of 200 repositories, and fails if no repository or multiple repositories match, or if the page limit is reached before pagination finishes.
+
+The options can also be configured through environment variables:
+
+| Option | Environment variable | Default |
+| ------ | -------------------- | ------- |
+| `--type` | `AIKIDO_FETCH_TYPE` | `sbom` |
+| `--repo-code` | `AIKIDO_REPO_CODE` | |
+| `--aikido-repo-name` | `AIKIDO_REPO_NAME` | `--repo-name` |
+| `--branch` | `AIKIDO_BRANCH` | |
+| `--aikido-base-url` | `AIKIDO_BASE_URL` | `https://app.aikido.dev` |
 
 ### Validating third-party files before a release
 
