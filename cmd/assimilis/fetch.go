@@ -87,11 +87,17 @@ func buildFetchCommand(cfg *generator.Config) *cli.Command {
 }
 
 func runFetchCommand(ctx context.Context, cfg generator.Config, fetchCfg fetchConfig, output io.Writer) error {
+	fetchCfg.baseURL = strings.TrimSpace(fetchCfg.baseURL)
+	fetchCfg.repoCode = strings.TrimSpace(fetchCfg.repoCode)
+	fetchCfg.fetchType = strings.TrimSpace(fetchCfg.fetchType)
+	fetchCfg.repoName = strings.TrimSpace(fetchCfg.repoName)
+	fetchCfg.branch = strings.TrimSpace(fetchCfg.branch)
+
 	if err := validateFetch(cfg, fetchCfg); err != nil {
 		return err
 	}
 
-	if strings.TrimSpace(fetchCfg.repoCode) != "" && fetchCfg.fetchType == fetchTypeRepoCode {
+	if fetchCfg.repoCode != "" && fetchCfg.fetchType == fetchTypeRepoCode {
 		_, err := fmt.Fprintln(output, fetchCfg.repoCode)
 
 		return err
@@ -101,7 +107,7 @@ func runFetchCommand(ctx context.Context, cfg generator.Config, fetchCfg fetchCo
 		Timeout: 2 * time.Minute,
 	})
 
-	if strings.TrimSpace(fetchCfg.repoCode) == "" {
+	if fetchCfg.repoCode == "" {
 		repoName := fetchCfg.repoName
 		if repoName == "" {
 			repoName = cfg.RepoName
@@ -137,7 +143,7 @@ func validateFetch(cfg generator.Config, fetchCfg fetchConfig) error {
 		return fmt.Errorf("unsupported fetch type %q: expected sbom or repo-code", fetchCfg.fetchType)
 	}
 
-	if strings.TrimSpace(fetchCfg.repoCode) != "" && fetchCfg.fetchType == fetchTypeRepoCode {
+	if fetchCfg.repoCode != "" && fetchCfg.fetchType == fetchTypeRepoCode {
 		return nil
 	}
 

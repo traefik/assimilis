@@ -52,6 +52,19 @@ func TestFetchCommandModes(t *testing.T) {
 			noCredentials:  true,
 		},
 		{
+			name:           "padded repository code override",
+			args:           []string{"--type", "repo-code", "--repo-code", " 99 "},
+			expectedOutput: "99\n",
+			noCredentials:  true,
+		},
+		{
+			name:           "whitespace-only Aikido name falls back",
+			args:           []string{"--type", "repo-code", "--repo-name", testRepoName, "--branch", "v2.11"},
+			env:            map[string]string{"AIKIDO_REPO_NAME": " \t "},
+			expectedOutput: "7\n",
+			lookups:        1,
+		},
+		{
 			name:          "default SBOM with automatic lookup",
 			args:          []string{"--repo-name", testRepoName, "--branch", "v2.11"},
 			expectedError: exportError,
