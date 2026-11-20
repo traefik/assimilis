@@ -90,6 +90,38 @@ func TestExtractGoCopyrightFromCache_PercentEncodedVersion(t *testing.T) {
 	assert.Equal(t, "Copyright 2014-2017 Microsoft", got)
 }
 
+func TestExtractGoCopyrightFromCache_Subpath(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+
+	for modDir, license := range map[string]string{
+		filepath.Join(dir, "github.com", "vulcand", "oxy", "v2@v2.0.3"):        "Copyright 2017 Vulcand Authors",
+		filepath.Join(dir, "github.com", "hashicorp", "consul", "api@v1.26.1"): "Copyright (c) 2013 HashiCorp, Inc.",
+	} {
+		require.NoError(t, os.MkdirAll(modDir, 0o755))
+		require.NoError(t, os.WriteFile(filepath.Join(modDir, "LICENSE"), []byte(license), 0o644))
+	}
+
+	tests := []struct {
+		purl string
+		want string
+	}{
+		{purl: "pkg:golang/github.com/vulcand/oxy@v2.0.3#v2", want: "Copyright 2017 Vulcand Authors"},
+		{purl: "pkg:golang/github.com/vulcand/oxy@v2.0.3?type=module#v2", want: "Copyright 2017 Vulcand Authors"},
+		{purl: "pkg:golang/github.com/vulcand/oxy@v2.0.3#/v2/", want: "Copyright 2017 Vulcand Authors"},
+		{purl: "pkg:golang/github.com/hashicorp/consul@v1.26.1#api", want: "Copyright (c) 2013 HashiCorp, Inc."},
+	}
+
+	for _, test := range tests {
+		t.Run(test.purl, func(t *testing.T) {
+			t.Parallel()
+
+			assert.Equal(t, test.want, extractGoCopyrightFromCache(dir, test.purl))
+		})
+	}
+}
+
 func TestExtractGoCopyrightFromCache_RejectsPathEscape(t *testing.T) {
 	t.Parallel()
 
@@ -108,6 +140,8 @@ func TestExtractGoCopyrightFromCache_RejectsPathEscape(t *testing.T) {
 		"pkg:golang/%2E%2E/outside@v1",
 		"pkg:golang/mod@../outside",
 		"pkg:golang//absolute@v1",
+		"pkg:golang/mod@v1#../../outside",
+		"pkg:golang/mod@v1#%2E%2E/%2E%2E/outside",
 	} {
 		assert.Empty(t, extractGoCopyrightFromCache(cache, purl), purl)
 	}
